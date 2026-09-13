@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elecciones por comités</title>
+<style>
+:root{
+  --tinta:#17171a;
+  --acento:#5b3df6;
+  --encabezado:#3d4350;
+  --encabezado-alto:#4e5566;
+  --papel:#ffffff;
+  --fondo:#f3f4f6;
+  --linea:#e4e5ea;
+  --linea-fuerte:#c9cbd3;
+  --tenue:#6b6f7a;
+  --ok:#1a7f4b;      --ok-bg:#e9f5ee;
+  --falta:#a2680a;   --falta-bg:#fdf1da;
+  --excede:#b3261e;  --excede-bg:#fdeae8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:system-ui,"Segoe UI",Roboto,sans-serif;background:var(--fondo);color:var(--tinta);font-size:14px}
+h1,h2,h3{margin:0}
+button{font:inherit;cursor:pointer}
+input,select{font:inherit}
+
+.encabezado{
+  background:var(--encabezado);color:#fff;padding:14px 20px;
+  display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.encabezado h1{font-size:16px;font-weight:600}
+.encabezado p{margin:2px 0 0;font-size:12px;color:#c9ccd4}
+.encabezado .herramientas{display:flex;gap:6px;flex-wrap:wrap}
+.encabezado button{
+  font-size:12.5px;padding:7px 12px;border-radius:6px;
+  border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.14);color:#fff;
+}
+.encabezado button:hover{background:var(--encabezado-alto)}
+
+.envoltura{max-width:900px;margin:0 auto;padding:22px 20px 60px}
+.tarjeta{background:var(--papel);border:1px solid var(--linea);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+.tarjeta h2{font-size:15px;margin-bottom:12px}
+.tarjeta h3{font-size:13.5px;margin-bottom:8px}
+.fila{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.fila label{font-size:12.5px;color:var(--tenue)}
+input[type=text],input[type=password],input[type=datetime-local],select{
+  padding:8px 10px;border:1px solid var(--linea-fuerte);border-radius:6px;background:#fff;min-width:160px;
+}
+.btn{background:var(--tinta);color:#fff;border:none;padding:9px 16px;border-radius:6px}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.secundario{background:#fff;color:var(--tinta);border:1px solid var(--linea-fuerte)}
+.btn.peligro{background:var(--excede)}
+.btn.chico{padding:5px 10px;font-size:12.5px}
+
+.etiqueta{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600}
+.etiqueta.ok{background:var(--ok-bg);color:var(--ok)}
+.etiqueta.falta{background:var(--falta-bg);color:var(--falta)}
+.etiqueta.excede{background:var(--excede-bg);color:var(--excede)}
+
+.error{color:var(--excede);font-size:12.5px;margin-top:6px}
+.tenue{color:var(--tenue);font-size:12.5px}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--linea)}
+th{color:var(--tenue);font-weight:600;font-size:12px}
+
+.candidato{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--linea);
+  border-radius:8px;margin-bottom:8px;cursor:pointer;
+}
+.candidato:hover{border-color:var(--acento)}
+.candidato.elegido{border-color:var(--acento);background:#f4f2fe}
+.candidato input{margin:0}
+
+.pestanas{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.pestanas button{padding:8px 14px;border-radius:6px;border:1px solid var(--linea-fuerte);background:#fff}
+.pestanas button.activa{background:var(--tinta);color:#fff;border-color:var(--tinta)}
+
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="encabezado">
+  <div>
+    <h1 id="tituloApp">Elecciones por comités</h1>
+    <p id="subtitulo">Acceso</p>
+  </div>
+  <div class="herramientas" id="herramientas"></div>
+</div>
+
+<div class="envoltura" id="envoltura"></div>
+
+<script>
+const API = '/api';
+let miToken = '', miPersonaId = null, adminPass = '';
+const LLAVE_SESION = 'elecciones-sesion';
+
+function guardarSesion(){ try{ localStorage.setItem(LLAVE_SESION, JSON.stringify({ token: miToken, persona_id: miPersonaId })); }catch(e){} }
+function borrarSesion(){ try{ localStorage.removeItem(LLAVE_SESION); }catch(e){} }
+function leerSesion(){ try{ return JSON.parse(localStorage.getItem(LLAVE_SESION)); }catch(e){ return null; } }
+
+async function api(metodo, ruta, cuerpo){
+  const r = await fetch(API + ruta, {
+    method: metodo,
+    headers: Object.assign({ 'Content-Type': 'application/json' },
+      miToken ? { 'X-Token': miToken } : {}, adminPass ? { 'X-Admin': adminPass } : {}),
+    body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined
+  });
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok) throw new Error(j.error || ('Error ' + r.status));
+  return j;
+}
+
+function salir(){
+  miToken = ''; miPersonaId = null; adminPass = '';
+  borrarSesion();
+  pintarAcceso();
+}
+function encabezado(titulo, subtitulo, botonSalir){
+  document.getElementById('tituloApp').textContent = titulo;
+  document.getElementById('subtitulo').textContent = subtitulo;
+  document.getElementById('herramientas').innerHTML = botonSalir ? '<button onclick="salir()">Salir</button>' : '';
+}
+
+/* ================= ACCESO ================= */
+async function pintarAcceso(){
+  encabezado('Elecciones por comités', 'Acceso', false);
+  const [grupos, personas] = await Promise.all([api('GET','/grupos'), api('GET','/personas')]);
+  const env = document.getElementById('envoltura');
+  env.innerHTML = `
+    <div class="tarjeta">
+      <h2>Entrar</h2>
+      <div class="fila">
+        <label>Grupo</label>
+        <select id="selGrupo"><option value="">Todos</option>
+          ${grupos.map(g => `<option value="${g.id}">${escHtml(g.nombre)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="fila">
+        <label>Persona</label>
+        <select id="selPersona"><option value="">Selecciona tu nombre…</option></select>
+      </div>
+      <div id="zonaClave"></div>
+      <div id="errAcceso" class="error" hidden></div>
+    </div>
+    <div class="tarjeta">
+      <h3>Administración</h3>
+      <div class="fila">
+        <input type="password" id="claveAdmin" placeholder="Clave de administrador">
+        <button class="btn secundario" onclick="entrarAdmin()">Entrar como admin</button>
+      </div>
+      <div id="errAdmin" class="error" hidden></div>
+    </div>
+  `;
+  function refrescarPersonas(){
+    const gid = document.getElementById('selGrupo').value;
+    const sel = document.getElementById('selPersona');
+    const lista = personas.filter(p => !gid || String(p.grupo_id) === gid);
+    sel.innerHTML = '<option value="">Selecciona tu nombre…</option>' +
+      lista.map(p => `<option value="${p.id}">${escHtml(p.nombre)}</option>`).join('');
+  }
+  document.getElementById('selGrupo').addEventListener('change', refrescarPersonas);
+  refrescarPersonas();
+  document.getElementById('selPersona').addEventListener('change', async e => {
+    const id = e.target.value;
+    const zona = document.getElementById('zonaClave');
+    document.getElementById('errAcceso').hidden = true;
+    if(!id){ zona.innerHTML = ''; return; }
+    const { tienePassword } = await api('POST', '/persona/estado', { persona_id: Number(id) });
+    zona.innerHTML = tienePassword
+      ? `<div class="fila"><input type="password" id="clave1" placeholder="Contraseña"></div>
+         <button class="btn" onclick="entrarPersona(${id})">Entrar</button>`
+      : `<p class="tenue">Primer acceso: crea tu contraseña (mínimo 8 caracteres).</p>
+         <div class="fila"><input type="password" id="clave1" placeholder="Nueva contraseña"></div>
+         <button class="btn" onclick="registrarPersona(${id})">Crear y entrar</button>`;
+  });
+}
+function escHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function entrarPersona(id){
+  const err = document.getElementById('errAcceso'); err.hidden = true;
+  try{
+    const clave = document.getElementById('clave1').value;
+    const j = await api('POST', '/persona/login', { persona_id: id, clave });
+    miToken = j.token; miPersonaId = id; guardarSesion();
+    pintarElector();
+  }catch(e){ err.textContent = e.message; err.hidden = false; }
+}
+async function registrarPersona(id){
+  const err = document.getElementById('errAcceso'); err.hidden = true;
+  try{
+    const clave = document.getElementById('clave1').value;
+    const j = await api('POST', '/persona/registrar', { persona_id: id, clave });
+    miToken = j.token; miPersonaId = id; guardarSesion();
+    pintarElector();
+  }catch(e){ err.textContent = e.message; err.hidden = false; }
+}
+async function entrarAdmin(){
+  const err = document.getElementById('errAdmin'); err.hidden = true;
+  const clave = document.getElementById('claveAdmin').value;
+  try{
+    const j = await api('POST', '/admin/login', { clave });
+    if(!j.ok) throw new Error('Clave incorrecta.');
+    adminPass = clave;
+    pintarAdmin();
+  }catch(e){ err.textContent = e.message; err.hidden = false; }
+}
+
+/* ================= VISTA ELECTOR ================= */
+async function pintarElector(){
+  let estado;
+  try{ estado = await api('GET', '/estado'); }
+  catch(e){ salir(); return; }
+  encabezado('Elecciones por comités', 'Hola, ' + estado.persona.nombre, true);
+  const env = document.getElementById('envoltura');
+  if(!estado.comites.length){
+    env.innerHTML = `<div class="tarjeta"><p class="tenue">Tu grupo no tiene ningún comité de votación asignado por ahora.</p></div>`;
+    return;
+  }
+  env.innerHTML = estado.comites.map(c => `
+    <div class="tarjeta" id="comite-${c.id}">
+      <h2>${escHtml(c.nombre)} <span class="etiqueta ${c.abierto ? 'ok' : 'falta'}">${c.abierto ? 'Abierto' : 'Cerrado'}</span></h2>
+      <p class="tenue">Esta comisión tiene ${c.escanos} escaño(s). Marca un candidato.</p>
+      <div id="lista-${c.id}">
+        ${c.candidatos.length ? c.candidatos.map(cand => `
+          <div class="candidato ${c.miVoto === cand.id ? 'elegido' : ''}" onclick="marcar(${c.id},${cand.id})">
+            <input type="radio" name="c${c.id}" ${c.miVoto === cand.id ? 'checked' : ''} ${!c.abierto ? 'disabled' : ''}>
+            <span>${escHtml(cand.nombre)}</span>
+          </div>
+        `).join('') : '<p class="tenue">Aún no hay candidatos dados de alta.</p>'}
+      </div>
+      ${c.miVoto ? '<p class="etiqueta ok">Tu voto quedó registrado</p>' : ''}
+      <div id="err-${c.id}" class="error" hidden></div>
+    </div>
+  `).join('');
+}
+async function marcar(comite_id, candidato_id){
+  const err = document.getElementById('err-' + comite_id); err.hidden = true;
+  try{
+    await api('POST', '/voto', { comite_id, candidato_id });
+    pintarElector();
+  }catch(e){ err.textContent = e.message; err.hidden = false; }
+}
+
+/* ================= VISTA ADMIN ================= */
+let pestanaAdmin = 'grupos';
+async function pintarAdmin(){
+  encabezado('Elecciones por comités', 'Administración', true);
+  document.getElementById('envoltura').innerHTML = `
+    <div class="pestanas">
+      ${['grupos','personas','comites','candidatos','resultados','accesos'].map(p =>
+        `<button class="${p===pestanaAdmin?'activa':''}" onclick="irPestana('${p}')">${etiquetaPestana(p)}</button>`
+      ).join('')}
+    </div>
+    <div id="panelAdmin"></div>
+  `;
+  await renderPestana();
+}
+function etiquetaPestana(p){
+  return { grupos:'Grupos', personas:'Personas', comites:'Comités', candidatos:'Candidatos', resultados:'Resultados', accesos:'Accesos' }[p];
+}
+function irPestana(p){ pestanaAdmin = p; pintarAdmin(); }
+
+async function renderPestana(){
+  const panel = document.getElementById('panelAdmin');
+  if(pestanaAdmin === 'grupos') return renderGrupos(panel);
+  if(pestanaAdmin === 'personas') return renderPersonas(panel);
+  if(pestanaAdmin === 'comites') return renderComites(panel);
+  if(pestanaAdmin === 'candidatos') return renderCandidatos(panel);
+  if(pestanaAdmin === 'resultados') return renderResultados(panel);
+  if(pestanaAdmin === 'accesos') return renderAccesos(panel);
+}
+
+async function renderGrupos(panel){
+  const grupos = await api('GET', '/grupos');
+  panel.innerHTML = `
+    <div class="tarjeta">
+      <h2>Grupos</h2>
+      <table><thead><tr><th>Nombre</th><th></th></tr></thead><tbody>
+        ${grupos.map(g => `<tr><td>${escHtml(g.nombre)}</td>
+          <td><button class="btn peligro chico" onclick="borrarGrupo(${g.id})">Eliminar</button></td></tr>`).join('')}
+      </tbody></table>
+      <div class="fila" style="margin-top:12px">
+        <input type="text" id="nuevoGrupo" placeholder="Nombre del grupo">
+        <button class="btn" onclick="crearGrupo()">Agregar</button>
+      </div>
+      <div id="errGrupos" class="error" hidden></div>
+    </div>
+  `;
+}
+async function crearGrupo(){
+  const err = document.getElementById('errGrupos'); err.hidden = true;
+  try{ await api('POST', '/admin/grupo', { nombre: document.getElementById('nuevoGrupo').value }); renderPestana(); }
+  catch(e){ err.textContent = e.message; err.hidden = false; }
+}
+async function borrarGrupo(id){
+  if(!confirm('¿Eliminar este grupo? Solo funciona si no tiene personas ni comités asociados.')) return;
+  try{ await api('DELETE', '/admin/grupo/' + id); renderPestana(); }
+  catch(e){ alert(e.message); }
+}
+
+async function renderPersonas(panel){
+  const [personas, grupos] = await Promise.all([api('GET','/personas'), api('GET','/grupos')]);
+  const nombreGrupo = gid => (grupos.find(g => g.id === gid) || {}).nombre || '—';
+  panel.innerHTML = `
+    <div class="tarjeta">
+      <h2>Personas (padrón)</h2>
+      <table><thead><tr><th>Nombre</th><th>Grupo</th><th></th></tr></thead><tbody>
+        ${personas.map(p => `<tr><td>${escHtml(p.nombre)}</td><td>${escHtml(nombreGrupo(p.grupo_id))}</td>
+          <td><button class="btn peligro chico" onclick="borrarPersona(${p.id})">Eliminar</button></td></tr>`).join('')}
+      </tbody></table>
+      <div class="fila" style="margin-top:12px">
+        <input type="text" id="nuevaPersona" placeholder="Nombre">
+        <select id="grupoPersona">${grupos.map(g => `<option value="${g.id}">${escHtml(g.nombre)}</option>`).join('')}</select>
+        <button class="btn" onclick="crearPersona()">Agregar</button>
+      </div>
+      <div id="errPersonas" class="error" hidden></div>
+    </div>
+  `;
+}
+async function crearPersona(){
+  const err = document.getElementById('errPersonas'); err.hidden = true;
+  try{
+    await api('POST', '/admin/persona', {
+      nombre: document.getElementById('nuevaPersona').value,
+      grupo_id: Number(document.getElementById('grupoPersona').value)
+    });
+    renderPestana();
+  }catch(e){ err.textContent = e.message; err.hidden = false; }
+}
+async function borrarPersona(id){
+  if(!confirm('¿Eliminar esta persona? Se borran también su contraseña y sus votos.')) return;
+  try{ await api('DELETE', '/admin/persona/' + id); renderPestana(); }
+  catch(e){ alert(e.message); }
+}
+
+async function renderComites(panel){
+  const [comites, grupos] = await Promise.all([api('GET','/comites'), api('GET','/grupos')]);
+  const nombreGrupo = gid => (grupos.find(g => g.id === gid) || {}).nombre || '—';
+  panel.innerHTML = `
+    <div class="tarjeta">
+      <h2>Comités</h2>
+      <table><thead><tr><th>Nombre</th><th>Escaños</th><th>Grupo elector</th><th>Estado</th><th>Cierra</th><th>Resultados</th><th></th></tr></thead><tbody>
+        ${comites.map(c => `<tr>
+          <td>${escHtml(c.nombre)}</td>
+          <td>${c.escanos}</td>
+          <td>${escHtml(nombreGrupo(c.grupo_elector_id))}</td>
+          <td><span class="etiqueta ${c.abierto?'ok':'falta'}">${c.abierto?'Abierto':'Cerrado'}</span>
+              <button class="btn secundario chico" onclick="toggleComite(${c.id}, ${!c.abierto})">${c.abierto?'Cerrar':'Abrir'}</button></td>
+          <td>
+            <input type="datetime-local" id="cierra-${c.id}" style="min-width:170px">
+            <button class="btn secundario chico" onclick="fijarCierre(${c.id})">Fijar</button>
+          </td>
+          <td><span class="etiqueta ${c.publicado?'ok':'falta'}">${c.publicado?'Publicados':'Ocultos'}</span>
+              <button class="btn secundario chico" onclick="togglePublicado(${c.id}, ${!c.publicado})">${c.publicado?'Ocultar':'Publicar'}</button></td>
+          <td><button class="btn peligro chico" onclick="borrarComite(${c.id})">Eliminar</button></td>
+        </tr>`).join('')}
+      </tbody></table>
+      <div class="fila" style="margin-top:12px">
+        <input type="text" id="nuevoComite" placeholder="Nombre del comité">
+        <input type="text" id="escanosComite" placeholder="Escaños" style="min-width:70px" value="1">
+        <select id="grupoComite">${grupos.map(g => `<option value="${g.id}">${escHtml(g.nombre)}</option>`).join('')}</select>
+        <button class="btn" onclick="crearComite()">Agregar</button>
+      </div>
+      <div id="errComites" class="error" hidden></div>
+    </div>
+  `;
+}
+async function crearComite(){
+  const err = document.getElementById('errComites'); err.hidden = true;
+  try{
+    await api('POST', '/admin/comite', {
+      nombre: document.getElementById('nuevoComite').value,
+      escanos: Number(document.getElementById('escanosComite').value) || 1,
+      grupo_elector_id: Number(document.getElementById('grupoComite').value)
+    });
+    renderPestana();
+  }catch(e){ err.textContent = e.message; err.hidden = false; }
+}
+async function toggleComite(id, abierto){ await api('PUT', '/admin/comite/' + id, { abierto }); renderPestana(); }
+async function togglePublicado(id, publicado){ await api('PUT', '/admin/comite/' + id, { publicado }); renderPestana(); }
+async function fijarCierre(id){
+  const cierra = document.getElementById('cierra-' + id).value || null;
+  await api('PUT', '/admin/comite/' + id, { cierra });
+  renderPestana();
+}
+async function borrarComite(id){
+  if(!confirm('¿Eliminar este comité? Se borran también sus candidatos y votos.')) return;
+  try{ await api('DELETE', '/admin/comite/' + id); renderPestana(); }
+  catch(e){ alert(e.message); }
+}
+
+async function renderCandidatos(panel){
+  const comites = await api('GET', '/comites');
+  if(!comites.length){ panel.innerHTML = '<div class="tarjeta"><p class="tenue">Da de alta un comité primero.</p></div>'; return; }
+  const actual = window._comiteCandidatos || comites[0].id;
+  window._comiteCandidatos = actual;
+  const cands = await api('GET', `/admin/resultados/${actual}`).catch(() => ({ candidatos: [] }));
+  panel.innerHTML = `
+    <div class="tarjeta">
+      <h2>Candidatos</h2>
+      <div class="fila">
+        <label>Comité</label>
+        <select id="selComiteCand" onchange="cambiarComiteCand(this.value)">
+          ${comites.map(c => `<option value="${c.id}" ${c.id===Number(actual)?'selected':''}>${escHtml(c.nombre)}</option>`).join('')}
+        </select>
+      </div>
+      <table><thead><tr><th>Nombre</th><th></th></tr></thead><tbody>
+        ${cands.candidatos.map(c => `<tr><td>${escHtml(c.nombre)}</td>
+          <td><button class="btn peligro chico" onclick="borrarCandidato(${c.id})">Eliminar</button></td></tr>`).join('')}
+      </tbody></table>
+      <div class="fila" style="margin-top:12px">
+        <input type="text" id="nuevoCandidato" placeholder="Nombre del candidato">
+        <button class="btn" onclick="crearCandidato(${actual})">Agregar</button>
+      </div>
+      <div id="errCandidatos" class="error" hidden></div>
+    </div>
+  `;
+}
+function cambiarComiteCand(id){ window._comiteCandidatos = Number(id); renderPestana(); }
+async function crearCandidato(comite_id){
+  const err = document.getElementById('errCandidatos'); err.hidden = true;
+  try{
+    await api('POST', '/admin/candidato', { comite_id, nombre: document.getElementById('nuevoCandidato').value });
+    renderPestana();
+  }catch(e){ err.textContent = e.message; err.hidden = false; }
+}
+async function borrarCandidato(id){
+  if(!confirm('¿Eliminar este candidato? Se borran también los votos que tenga.')) return;
+  try{ await api('DELETE', '/admin/candidato/' + id); renderPestana(); }
+  catch(e){ alert(e.message); }
+}
+
+async function renderResultados(panel){
+  const comites = await api('GET', '/comites');
+  if(!comites.length){ panel.innerHTML = '<div class="tarjeta"><p class="tenue">No hay comités todavía.</p></div>'; return; }
+  const actual = window._comiteResultados || comites[0].id;
+  window._comiteResultados = actual;
+  const r = await api('GET', `/admin/resultados/${actual}`);
+  panel.innerHTML = `
+    <div class="tarjeta">
+      <h2>Resultados (siempre visibles para el admin, sin importar si ya se publicaron)</h2>
+      <div class="fila">
+        <label>Comité</label>
+        <select id="selComiteRes" onchange="cambiarComiteRes(this.value)">
+          ${comites.map(c => `<option value="${c.id}" ${c.id===Number(actual)?'selected':''}>${escHtml(c.nombre)}</option>`).join('')}
+        </select>
+      </div>
+      <p class="tenue">Votos emitidos: ${r.totalVotantes}</p>
+      <table><thead><tr><th>Candidato</th><th>Votos</th></tr></thead><tbody>
+        ${r.candidatos.map(c => `<tr><td>${escHtml(c.nombre)}</td><td>${c.votos}</td></tr>`).join('')}
+      </tbody></table>
+    </div>
+  `;
+}
+function cambiarComiteRes(id){ window._comiteResultados = Number(id); renderPestana(); }
+
+async function renderAccesos(panel){
+  const [personas, conClave] = await Promise.all([api('GET','/personas'), api('GET','/admin/claves')]);
+  panel.innerHTML = `
+    <div class="tarjeta">
+      <h2>Accesos</h2>
+      <table><thead><tr><th>Persona</th><th>Contraseña</th><th></th></tr></thead><tbody>
+        ${personas.map(p => `<tr><td>${escHtml(p.nombre)}</td>
+          <td><span class="etiqueta ${conClave.includes(p.id)?'ok':'falta'}">${conClave.includes(p.id)?'Creada':'Sin crear'}</span></td>
+          <td>${conClave.includes(p.id) ? `<button class="btn secundario chico" onclick="restablecer(${p.id})">Restablecer</button>` : ''}</td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>
+  `;
+}
+async function restablecer(id){
+  if(!confirm('¿Restablecer la contraseña de esta persona? Tendrá que crear una nueva.')) return;
+  await api('POST', `/admin/persona/${id}/reset`);
+  renderPestana();
+}
+
+/* ================= ARRANQUE ================= */
+(async function iniciar(){
+  const s = leerSesion();
+  if(s && s.token){
+    miToken = s.token; miPersonaId = s.persona_id;
+    try{ await pintarElector(); return; }catch(e){}
+  }
+  pintarAcceso();
+})();
+</script>
+</body>
+</html>
