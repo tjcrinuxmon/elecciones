@@ -10,7 +10,7 @@
                  (revelar_al_completar), y si es una ronda de desempate de
                  otro comité (comite_padre_id).
    - candidatos: boleta que arma el admin para cada comité — nombre,
-                 institución, especialidad y CV en PDF (cv_filename es el
+                 grado académico, especialidad y CV en PDF (cv_filename es el
                  nombre en disco dentro de uploads/cv/).
    - votos:      un renglón por persona+comité+candidatura marcada (voto
                  múltiple: cada persona marca hasta `escanos` candidaturas).
@@ -45,13 +45,15 @@ db.exec(`
     cierra TEXT,
     publicado INTEGER NOT NULL DEFAULT 0,
     revelar_al_completar INTEGER NOT NULL DEFAULT 0,
+    calcular_paridad INTEGER NOT NULL DEFAULT 0,
     comite_padre_id INTEGER REFERENCES comites(id)
   );
   CREATE TABLE IF NOT EXISTS candidatos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     comite_id INTEGER NOT NULL REFERENCES comites(id),
     nombre TEXT NOT NULL,
-    institucion TEXT,
+    genero TEXT,
+    grado_academico TEXT,
     especialidad TEXT,
     cv_texto TEXT,
     cv_filename TEXT,
@@ -98,9 +100,26 @@ const columnasCandidatos = db.prepare(`PRAGMA table_info(candidatos)`).all().map
 if(!columnasCandidatos.includes('cv_texto')){
   db.exec(`ALTER TABLE candidatos ADD COLUMN cv_texto TEXT`);
 }
+if(!columnasCandidatos.includes('grado_academico')){
+  if(columnasCandidatos.includes('institucion')){
+    db.exec(`ALTER TABLE candidatos RENAME COLUMN institucion TO grado_academico`);
+  }else{
+    db.exec(`ALTER TABLE candidatos ADD COLUMN grado_academico TEXT`);
+  }
+}
+if(!columnasCandidatos.includes('genero')){
+  if(columnasCandidatos.includes('sexo')){
+    db.exec(`ALTER TABLE candidatos RENAME COLUMN sexo TO genero`);
+  }else{
+    db.exec(`ALTER TABLE candidatos ADD COLUMN genero TEXT`);
+  }
+}
 const columnasComites = db.prepare(`PRAGMA table_info(comites)`).all().map(c => c.name);
 if(!columnasComites.includes('abre')){
   db.exec(`ALTER TABLE comites ADD COLUMN abre TEXT`);
+}
+if(!columnasComites.includes('calcular_paridad')){
+  db.exec(`ALTER TABLE comites ADD COLUMN calcular_paridad INTEGER NOT NULL DEFAULT 0`);
 }
 
 /* ---- grupos ---- */
@@ -147,7 +166,7 @@ const insComite = db.prepare(`
 `);
 const updComite = db.prepare(`
   UPDATE comites SET nombre = ?, escanos = ?, grupo_elector_id = ?,
-    abierto = ?, abre = ?, cierra = ?, publicado = ?, revelar_al_completar = ? WHERE id = ?
+    abierto = ?, abre = ?, cierra = ?, publicado = ?, revelar_al_completar = ?, calcular_paridad = ? WHERE id = ?
 `);
 const delComiteStmt = db.prepare(`DELETE FROM comites WHERE id = ?`);
 const allComites = db.prepare(`SELECT * FROM comites ORDER BY nombre`);
@@ -169,6 +188,7 @@ function editarComite(id, datos){
     datos.cierra !== undefined ? datos.cierra : actual.cierra,
     datos.publicado !== undefined ? (datos.publicado ? 1 : 0) : actual.publicado,
     datos.revelar_al_completar !== undefined ? (datos.revelar_al_completar ? 1 : 0) : actual.revelar_al_completar,
+    datos.calcular_paridad !== undefined ? (datos.calcular_paridad ? 1 : 0) : actual.calcular_paridad,
     id
   );
 }
@@ -180,6 +200,14 @@ function borrarComite(id){
   db.prepare(`DELETE FROM candidatos WHERE comite_id = ?`).run(id);
   delComiteStmt.run(id);
 }
+/* Borra los votos y confirmaciones de un comité (no el comité ni sus
+   candidaturas) para reiniciar la votación desde cero — p. ej. después de
+   pruebas. Como ya no queda cómputo real detrás, también se despublica. */
+function borrarVotosDeComite(id){
+  db.prepare(`DELETE FROM votos WHERE comite_id = ?`).run(id);
+  db.prepare(`DELETE FROM confirmaciones WHERE comite_id = ?`).run(id);
+  db.prepare(`UPDATE comites SET publicado = 0 WHERE id = ?`).run(id);
+}
 function listarComites(){ return allComites.all(); }
 function getComite(id){ return unComite.get(id) || null; }
 function comitesPorGrupo(grupo_id){ return comitesDeGrupo.all(grupo_id); }
@@ -187,11 +215,11 @@ function comitesHijosDe(id){ return comitesHijosStmt.all(id); }
 
 /* ---- candidatos ---- */
 const insCandidato = db.prepare(`
-  INSERT INTO candidatos (comite_id, nombre, institucion, especialidad, cv_texto, cv_filename, cv_nombre_original)
-  VALUES (?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO candidatos (comite_id, nombre, genero, grado_academico, especialidad, cv_texto, cv_filename, cv_nombre_original)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `);
 const updCandidato = db.prepare(`
-  UPDATE candidatos SET nombre = ?, institucion = ?, especialidad = ?, cv_texto = ? WHERE id = ?
+  UPDATE candidatos SET nombre = ?, genero = ?, grado_academico = ?, especialidad = ?, cv_texto = ? WHERE id = ?
 `);
 const updCandidatoCv = db.prepare(`
   UPDATE candidatos SET cv_filename = ?, cv_nombre_original = ? WHERE id = ?
@@ -201,12 +229,12 @@ const candidatosDeComite = db.prepare(`SELECT * FROM candidatos WHERE comite_id 
 const unCandidato = db.prepare(`SELECT * FROM candidatos WHERE id = ?`);
 const candidatosConArchivoStmt = db.prepare(`SELECT COUNT(*) AS n FROM candidatos WHERE cv_filename = ?`);
 function candidatosConArchivo(cv_filename){ return candidatosConArchivoStmt.get(cv_filename).n; }
-function crearCandidato(comite_id, nombre, institucion, especialidad, cv_texto, cv_filename, cv_nombre_original){
-  return insCandidato.run(comite_id, nombre, institucion || null, especialidad || null,
+function crearCandidato(comite_id, nombre, genero, grado_academico, especialidad, cv_texto, cv_filename, cv_nombre_original){
+  return insCandidato.run(comite_id, nombre, genero || null, grado_academico || null, especialidad || null,
     cv_texto || null, cv_filename || null, cv_nombre_original || null).lastInsertRowid;
 }
-function editarCandidato(id, nombre, institucion, especialidad, cv_texto){
-  updCandidato.run(nombre, institucion || null, especialidad || null, cv_texto || null, id);
+function editarCandidato(id, nombre, genero, grado_academico, especialidad, cv_texto){
+  updCandidato.run(nombre, genero || null, grado_academico || null, especialidad || null, cv_texto || null, id);
 }
 function actualizarCvCandidato(id, cv_filename, cv_nombre_original){
   updCandidatoCv.run(cv_filename, cv_nombre_original, id);
@@ -294,7 +322,7 @@ module.exports = {
   db,
   crearGrupo, editarGrupo, borrarGrupo, listarGrupos, getGrupo,
   crearPersona, editarPersona, borrarPersona, listarPersonas, getPersona, personasDeGrupo,
-  crearComite, editarComite, borrarComite, listarComites, getComite, comitesPorGrupo, comitesHijosDe,
+  crearComite, editarComite, borrarComite, borrarVotosDeComite, listarComites, getComite, comitesPorGrupo, comitesHijosDe,
   crearCandidato, editarCandidato, actualizarCvCandidato, borrarCandidato, listarCandidatos, getCandidato,
   candidatosConArchivo,
   marcarVoto, desmarcarVoto, votosDePersona, contarVotosPersona, resultadosDe, marcasDeComite,

@@ -54,7 +54,7 @@ input,select{font:inherit}
 }
 
 .envoltura{max-width:900px;margin:0 auto;padding:22px 20px 60px;transition:max-width .15s}
-.envoltura.ancho{max-width:1560px}
+.envoltura.ancho{max-width:1760px}
 .envoltura.acceso{padding-top:9vh}
 .tarjeta{
   background:var(--papel);border:1px solid var(--linea);border-radius:12px;padding:18px 20px;margin-bottom:16px;
@@ -79,6 +79,12 @@ input,select{font:inherit}
   width:100%;min-width:0;padding:12px 14px 12px 40px;border-radius:10px;font-size:15.5px;
   background:var(--ine-tinte-suave);border:1px solid var(--linea-fuerte);margin-bottom:0;
 }
+.tarjeta-acceso .campo-icono input[type=password]{padding-right:40px}
+.campo-icono .alternar-clave{
+  position:absolute;right:6px;top:29px;background:none;border:none;padding:6px;
+  color:var(--tenue);cursor:pointer;line-height:0;border-radius:6px;
+}
+.campo-icono .alternar-clave:hover{color:var(--ine);background:rgba(103,64,146,.08)}
 .tarjeta-acceso .btn{
   width:100%;padding:13px;border-radius:10px;font-size:15.5px;font-weight:600;margin-top:6px;
   display:flex;align-items:center;justify-content:center;gap:8px;
@@ -96,7 +102,7 @@ input,select{font:inherit}
 input[type=text],input[type=password],input[type=datetime-local],select{
   padding:8px 10px;border:1px solid var(--linea-fuerte);border-radius:8px;background:#fff;min-width:160px;
 }
-.btn{background:var(--ine);color:#fff;border:none;padding:9px 16px;border-radius:8px}
+.btn{background:var(--ine);color:#fff;border:none;padding:9px 16px;border-radius:8px;white-space:nowrap;display:inline-block}
 .btn:hover{opacity:.88}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn.secundario{background:#fff;color:var(--ine);border:1px solid var(--linea-fuerte)}
@@ -234,6 +240,21 @@ function encabezado(titulo, subtitulo, botonSalir){
 const ICONO_PERSONA = '<svg class="icono" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"></path></svg>';
 const ICONO_CANDADO = '<svg class="icono" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>';
 const ICONO_ENTRAR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>';
+const ICONO_OJO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+const ICONO_OJO_TACHADO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.3 20.3 0 0 1 4.22-5.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a20.3 20.3 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+/* Botón de mostrar/ocultar contraseña: alterna el type del input anterior
+   (password/text) para que la persona pueda revisar lo que tecleó antes de
+   confirmar, y cambia su propio ícono entre ojo abierto/tachado. */
+function botonAlternarClave(){
+  return `<button type="button" class="alternar-clave" tabindex="-1" aria-label="Mostrar contraseña" onclick="alternarClave(this)">${ICONO_OJO}</button>`;
+}
+function alternarClave(btn){
+  const input = btn.previousElementSibling;
+  const mostrando = input.type === 'text';
+  input.type = mostrando ? 'password' : 'text';
+  btn.innerHTML = mostrando ? ICONO_OJO : ICONO_OJO_TACHADO;
+  btn.setAttribute('aria-label', mostrando ? 'Mostrar contraseña' : 'Ocultar contraseña');
+}
 
 async function pintarAcceso(){
   document.querySelector('.encabezado').hidden = true;
@@ -265,6 +286,7 @@ async function pintarAcceso(){
           <label for="claveAdmin">Clave de administración</label>
           ${ICONO_CANDADO}
           <input type="password" id="claveAdmin" placeholder="Clave de administración">
+          ${botonAlternarClave()}
         </div>
         <button type="submit" class="btn secundario">${ICONO_ENTRAR} Entrar como administración</button>
       </form>
@@ -284,6 +306,7 @@ async function pintarAcceso(){
              <label for="clave1">Contraseña</label>
              ${ICONO_CANDADO}
              <input type="password" id="clave1" placeholder="Contraseña">
+             ${botonAlternarClave()}
            </div>
            <button type="submit" class="btn">${ICONO_ENTRAR} Entrar</button>
          </form>`
@@ -293,10 +316,14 @@ async function pintarAcceso(){
              <label for="clave1">Nueva contraseña</label>
              ${ICONO_CANDADO}
              <input type="password" id="clave1" placeholder="Nueva contraseña">
+             ${botonAlternarClave()}
            </div>
            <button type="submit" class="btn">${ICONO_ENTRAR} Crear y entrar</button>
          </form>`;
   });
+}
+function detalleCandidatura(c){
+  return [c.genero, c.grado_academico, c.especialidad].filter(Boolean).map(escHtml).join(' · ');
 }
 function escHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 /* El CV es siempre un PDF; es un link directo al archivo, sin vista previa
@@ -388,7 +415,7 @@ async function pintarElector(){
             <input type="checkbox" ${marcado ? 'checked' : ''} ${bloqueado || sinCupo ? 'disabled' : ''}>
             <div style="flex-grow:1;min-width:0">
               <div>${escHtml(cand.nombre)}</div>
-              <div class="tenue">${escHtml(cand.institucion || '')}${cand.institucion && cand.especialidad ? ' · ' : ''}${escHtml(cand.especialidad || '')}</div>
+              <div class="tenue">${detalleCandidatura(cand)}</div>
             </div>
             <div style="flex-shrink:0" onclick="event.stopPropagation()">${enlaceCv(cand)}</div>
           </div>`;
@@ -413,11 +440,25 @@ async function pintarElector(){
   `;
   }).join('');
 }
+/* pintarElector() reconstruye todo el HTML del panel en cada acción, así que
+   sin esto el scroll (de la página y de cada lista-candidatos-scroll) se
+   reiniciaba a 0 con cada clic — la persona perdía su lugar en la lista al
+   votar. Se guarda antes de repintar y se restaura después. */
+async function pintarElectorConservandoScroll(){
+  const scrollPagina = window.scrollY;
+  const scrollsListas = {};
+  document.querySelectorAll('[id^="lista-"]').forEach(el => { scrollsListas[el.id] = el.scrollTop; });
+  await pintarElector();
+  document.querySelectorAll('[id^="lista-"]').forEach(el => {
+    if(scrollsListas[el.id] !== undefined) el.scrollTop = scrollsListas[el.id];
+  });
+  window.scrollTo(0, scrollPagina);
+}
 async function marcar(comite_id, candidato_id, marcarBool){
   const err = document.getElementById('err-' + comite_id); err.hidden = true;
   try{
     await api('POST', '/voto', { comite_id, candidato_id, marcar: marcarBool });
-    pintarElector();
+    await pintarElectorConservandoScroll();
   }catch(e){ err.textContent = e.message; err.hidden = false; }
 }
 async function confirmarVoto(comite_id){
@@ -436,7 +477,7 @@ async function confirmarVoto(comite_id){
   }
   try{
     await api('POST', '/voto/confirmar', { comite_id, permitir_incompleto });
-    pintarElector();
+    await pintarElectorConservandoScroll();
   }catch(e){ err.textContent = e.message; err.hidden = false; }
 }
 async function reabrirVoto(comite_id){
@@ -444,7 +485,7 @@ async function reabrirVoto(comite_id){
   if(!confirm('¿Seguro que quieres modificar tu votación? Se desbloqueará para que puedas cambiar tus candidaturas; vas a tener que volver a confirmarla cuando termines.')) return;
   try{
     await api('POST', '/voto/reabrir', { comite_id });
-    pintarElector();
+    await pintarElectorConservandoScroll();
   }catch(e){ err.textContent = e.message; err.hidden = false; }
 }
 
@@ -465,17 +506,32 @@ async function pintarAdmin(){
   await renderPestana();
 }
 function etiquetaPestana(p){
-  return { comites:'Comités', candidatos:'Candidatos', resultados:'Cómputo', accesos:'Accesos' }[p];
+  return { comites:'Comités', candidatos:'Candidaturas', resultados:'Cómputo', accesos:'Accesos' }[p];
 }
 function irPestana(p){ pestanaAdmin = p; pintarAdmin(); }
 
+/* Cada acción del admin (marcar un voto, abrir/cerrar un comité, etc.)
+   vuelve a pintar todo el panel — sin esto, la matriz y la página entera se
+   iban de golpe hasta arriba con cada clic, y se perdía el lugar en el que
+   se estaba trabajando. Se guarda el scroll (de la página y de la matriz)
+   antes de repintar y se restaura después. */
 async function renderPestana(){
   const panel = document.getElementById('panelAdmin');
-  if(window._boletaPersona) return renderBoletaPersona(panel);
-  if(pestanaAdmin === 'comites') return renderComites(panel);
-  if(pestanaAdmin === 'candidatos') return renderCandidatos(panel);
-  if(pestanaAdmin === 'resultados') return renderResultados(panel);
-  if(pestanaAdmin === 'accesos') return renderAccesos(panel);
+  const scrollPagina = window.scrollY;
+  const matrizAntes = document.querySelector('.matriz-computo-scroll');
+  const scrollMatriz = matrizAntes ? matrizAntes.scrollTop : null;
+
+  if(window._boletaPersona) await renderBoletaPersona(panel);
+  else if(pestanaAdmin === 'comites') await renderComites(panel);
+  else if(pestanaAdmin === 'candidatos') await renderCandidatos(panel);
+  else if(pestanaAdmin === 'resultados') await renderResultados(panel);
+  else if(pestanaAdmin === 'accesos') await renderAccesos(panel);
+
+  if(scrollMatriz !== null){
+    const matrizDespues = document.querySelector('.matriz-computo-scroll');
+    if(matrizDespues) matrizDespues.scrollTop = scrollMatriz;
+  }
+  window.scrollTo(0, scrollPagina);
 }
 
 async function renderComites(panel){
@@ -486,12 +542,12 @@ async function renderComites(panel){
       <h2>Comités</h2>
       <p class="tenue">Cada consejería del grupo elector emite tantos votos como escaños tenga el comité (uno por candidatura, sin repetir).</p>
       <p class="tenue" style="font-size:12.5px">"Abre" y "Cierra" son opcionales: si se dejan vacíos, el periodo de votación se controla solo con el botón Abrir/Cerrar.</p>
-      <table><thead><tr><th>Nombre</th><th>Escaños</th><th>Grupo elector</th><th>Estado</th><th>Abre</th><th>Cierra</th><th>Resultados</th><th>Ronda de</th><th></th></tr></thead><tbody>
+      <table><thead><tr><th>Nombre</th><th>Escaños</th><th>Grupo elector</th><th>Estado</th><th>Abre</th><th>Cierra</th><th>Resultados</th><th>Ronda de</th><th>Paridad</th><th></th></tr></thead><tbody>
         ${comites.map(c => c.id === window._editandoComite ? `<tr>
           <td><input type="text" id="editComNombre-${c.id}" value="${escHtml(c.nombre)}" style="min-width:160px"></td>
           <td><input type="text" id="editComEscanos-${c.id}" value="${c.escanos}" style="min-width:60px"></td>
           <td><select id="editComGrupo-${c.id}">${grupos.map(g => `<option value="${g.id}" ${g.id===c.grupo_elector_id?'selected':''}>${escHtml(g.nombre)}</option>`).join('')}</select></td>
-          <td colspan="4"></td>
+          <td colspan="5"></td>
           <td colspan="2" style="white-space:nowrap">
             <button class="btn chico" onclick="guardarEdicionComite(${c.id})">Guardar</button>
             <button class="btn secundario chico" onclick="cancelarEdicionComite()">Cancelar</button>
@@ -514,6 +570,8 @@ async function renderComites(panel){
               <button class="btn secundario chico" onclick="togglePublicado(${c.id}, ${!c.publicado})">${c.publicado?'Ocultar':'Publicar'}</button></td>
           <td><label class="tenue" style="display:flex;align-items:center;gap:5px;cursor:pointer">
               <input type="checkbox" ${c.revelar_al_completar ? 'checked' : ''} onchange="toggleRevelar(${c.id}, this.checked)"> al completarse</label></td>
+          <td><label class="tenue" style="display:flex;align-items:center;gap:5px;cursor:pointer" title="Muestra si la integración electa cumple la regla de paridad (los hombres no superan a las mujeres por más de 1)">
+              <input type="checkbox" ${c.calcular_paridad ? 'checked' : ''} onchange="toggleParidad(${c.id}, this.checked)"> calcular</label></td>
           <td style="white-space:nowrap">
             <button class="btn secundario chico" onclick="editarComiteUI(${c.id})">Editar</button>
             <button class="btn peligro chico" onclick="borrarComite(${c.id})">Eliminar</button>
@@ -544,6 +602,7 @@ async function crearComite(){
 async function toggleComite(id, abierto){ await api('PUT', '/admin/comite/' + id, { abierto }); renderPestana(); }
 async function togglePublicado(id, publicado){ await api('PUT', '/admin/comite/' + id, { publicado }); renderPestana(); }
 async function toggleRevelar(id, revelar_al_completar){ await api('PUT', '/admin/comite/' + id, { revelar_al_completar }); renderPestana(); }
+async function toggleParidad(id, calcular_paridad){ await api('PUT', '/admin/comite/' + id, { calcular_paridad }); renderPestana(); }
 async function fijarCierre(id){
   const cierra = document.getElementById('cierra-' + id).value || null;
   await api('PUT', '/admin/comite/' + id, { cierra });
@@ -574,6 +633,11 @@ async function guardarEdicionComite(id){
   }catch(e){ if(err){ err.textContent = e.message; err.hidden = false; } else alert(e.message); }
 }
 
+function opcionesGenero(actual){
+  return ['', 'Mujer', 'Hombre'].map(v =>
+    `<option value="${v}" ${v===(actual||'')?'selected':''}>${v || '— selecciona —'}</option>`
+  ).join('');
+}
 async function renderCandidatos(panel){
   const comites = await api('GET', '/comites');
   if(!comites.length){ panel.innerHTML = '<div class="tarjeta"><p class="tenue">Da de alta un comité primero.</p></div>'; return; }
@@ -589,10 +653,11 @@ async function renderCandidatos(panel){
           ${comites.map(c => `<option value="${c.id}" ${c.id===Number(actual)?'selected':''}>${escHtml(c.nombre)}</option>`).join('')}
         </select>
       </div>
-      <table><thead><tr><th>Nombre</th><th>Institución</th><th>Especialidad</th><th>CV</th><th></th></tr></thead><tbody>
+      <table><thead><tr><th>Nombre</th><th>Género</th><th>Grado académico</th><th style="max-width:260px">Especialidad</th><th>CV</th><th></th></tr></thead><tbody>
         ${cands.map(c => c.id === window._editandoCandidato ? `<tr>
           <td><input type="text" id="editNombre-${c.id}" value="${escHtml(c.nombre)}" style="min-width:140px"></td>
-          <td><input type="text" id="editInstitucion-${c.id}" value="${escHtml(c.institucion || '')}" style="min-width:140px"></td>
+          <td><select id="editGenero-${c.id}" style="min-width:110px">${opcionesGenero(c.genero)}</select></td>
+          <td><input type="text" id="editGradoAcademico-${c.id}" value="${escHtml(c.grado_academico || '')}" style="min-width:140px"></td>
           <td><input type="text" id="editEspecialidad-${c.id}" value="${escHtml(c.especialidad || '')}" style="min-width:140px"></td>
           <td style="min-width:200px">
             <input type="file" id="editCvArchivo-${c.id}" accept="application/pdf">
@@ -604,8 +669,9 @@ async function renderCandidatos(panel){
           </td>
         </tr>` : `<tr>
           <td>${escHtml(c.nombre)}</td>
-          <td>${escHtml(c.institucion || '')}</td>
-          <td>${escHtml(c.especialidad || '')}</td>
+          <td>${escHtml(c.genero || '')}</td>
+          <td>${escHtml(c.grado_academico || '')}</td>
+          <td style="max-width:260px;white-space:normal">${escHtml(c.especialidad || '')}</td>
           <td>${enlaceCv(c)}</td>
           <td style="white-space:nowrap">
             <button class="btn secundario chico" onclick="editarCandidatoUI(${c.id})">Editar</button>
@@ -619,9 +685,13 @@ async function renderCandidatos(panel){
           <label>Nombre completo</label>
           <input type="text" id="nuevoCandidatoNombre" placeholder="Nombre y apellidos">
         </div>
+        <div class="campo" style="flex:1 1 140px">
+          <label>Género</label>
+          <select id="nuevoCandidatoGenero">${opcionesGenero()}</select>
+        </div>
         <div class="campo" style="flex:1 1 220px">
-          <label>Institución de adscripción</label>
-          <input type="text" id="nuevoCandidatoInstitucion" placeholder="Ej. UNAM">
+          <label>Grado académico</label>
+          <input type="text" id="nuevoCandidatoGrado" placeholder="Ej. Doctorado en Estadística">
         </div>
         <div class="campo" style="flex:1 1 220px">
           <label>Especialidad</label>
@@ -644,7 +714,8 @@ async function crearCandidato(comite_id){
     const fd = new FormData();
     fd.append('comite_id', comite_id);
     fd.append('nombre', document.getElementById('nuevoCandidatoNombre').value);
-    fd.append('institucion', document.getElementById('nuevoCandidatoInstitucion').value);
+    fd.append('genero', document.getElementById('nuevoCandidatoGenero').value);
+    fd.append('grado_academico', document.getElementById('nuevoCandidatoGrado').value);
     fd.append('especialidad', document.getElementById('nuevoCandidatoEspecialidad').value);
     const archivo = document.getElementById('nuevoCandidatoCv').files[0];
     if(archivo) fd.append('cv', archivo);
@@ -664,7 +735,8 @@ async function guardarEdicionCandidato(id){
   try{
     const fd = new FormData();
     fd.append('nombre', document.getElementById('editNombre-' + id).value);
-    fd.append('institucion', document.getElementById('editInstitucion-' + id).value);
+    fd.append('genero', document.getElementById('editGenero-' + id).value);
+    fd.append('grado_academico', document.getElementById('editGradoAcademico-' + id).value);
     fd.append('especialidad', document.getElementById('editEspecialidad-' + id).value);
     const archivo = document.getElementById('editCvArchivo-' + id).files[0];
     if(archivo) fd.append('cv', archivo);
@@ -679,10 +751,7 @@ async function renderResultados(panel){
   if(!comites.length){ panel.innerHTML = '<div class="tarjeta"><p class="tenue">No hay comités todavía.</p></div>'; return; }
   const actual = window._comiteResultados || comites[0].id;
   window._comiteResultados = actual;
-  const [m, bitacora] = await Promise.all([
-    api('GET', `/admin/matriz/${actual}`),
-    api('GET', `/admin/auditoria/${actual}`).catch(() => [])
-  ]);
+  const m = await api('GET', `/admin/matriz/${actual}`);
   const hayEmpate = m.candidatos.some(c => c.empatado);
   panel.innerHTML = `
     <div class="tarjeta">
@@ -694,8 +763,14 @@ async function renderResultados(panel){
         </select>
         <button class="btn secundario chico" onclick="descargarActa(${actual},'xlsx')">Descargar Excel</button>
         <button class="btn secundario chico" onclick="descargarActa(${actual},'pdf')">Descargar PDF</button>
+        <button class="btn peligro chico" onclick="borrarVotosComite(${actual})">Borrar votación</button>
       </div>
       <p class="tenue">${m.comite.escanos} escaño(s) a integrar · ${m.personas.filter(p=>p.confirmado).length} de ${m.personas.length} consejerías confirmaron su voto.</p>
+
+      ${m.paridad ? (m.paridad.esParitaria
+        ? `<div class="etiqueta ok" style="display:block;margin-bottom:10px;padding:8px 12px">Integración paritaria — ${m.paridad.mujeres} mujer(es), ${m.paridad.hombres} hombre(s)${m.paridad.sinCapturar ? ` · ${m.paridad.sinCapturar} sin género capturado` : ''}.</div>`
+        : `<div class="etiqueta excede" style="display:block;margin-bottom:10px;padding:8px 12px">Integración NO paritaria — ${m.paridad.hombres} hombre(s), ${m.paridad.mujeres} mujer(es)${m.paridad.sinCapturar ? ` · ${m.paridad.sinCapturar} sin género capturado` : ''}.</div>`
+      ) : ''}
 
       ${hayEmpate ? `
         <div class="etiqueta falta" style="display:block;margin-bottom:10px;padding:8px 12px">
@@ -711,13 +786,13 @@ async function renderResultados(panel){
         <th style="min-width:60px;border-left:2px solid var(--linea-fuerte)">Total</th><th style="min-width:80px">Estado</th>
       </tr></thead><tbody>
         ${m.candidatos.map(c => `<tr${c.electo ? ' style="background:var(--ok-bg)"' : c.empatado ? ' style="background:var(--falta-bg)"' : ''}>
-          <td>${escHtml(c.nombre)}<div class="tenue">${escHtml(c.institucion||'')}${c.institucion&&c.especialidad?' · ':''}${escHtml(c.especialidad||'')}</div></td>
+          <td style="max-width:280px;white-space:normal;overflow-wrap:break-word">${escHtml(c.nombre)}<div class="tenue">${[c.grado_academico, c.especialidad].filter(Boolean).map(escHtml).join(' · ')}</div></td>
           ${m.personas.map(p => {
             const marcado = m.marcas.some(v=>v.persona_id===p.id&&v.candidato_id===c.id);
             return `<td style="text-align:center;cursor:pointer" title="Clic para ${marcado?'quitar':'poner'} el voto de ${escHtml(p.nombre)} por esta candidatura" onclick="toggleVotoAdmin(${p.id},${m.comite.id},${c.id},${!marcado})">${marcado ? '✓' : ''}</td>`;
           }).join('')}
           <td style="text-align:center;font-weight:600;border-left:2px solid var(--linea-fuerte)">${c.votos}</td>
-          <td>${c.electo ? '<span class="etiqueta ok">Electo</span>' : c.empatado ? '<span class="etiqueta falta">Empate</span>' : ''}</td>
+          <td>${c.electo ? '<span class="etiqueta ok">Candidatura electa</span>' : c.empatado ? '<span class="etiqueta falta">Empate</span>' : ''}</td>
         </tr>`).join('')}
       </tbody>
       <tfoot><tr>
@@ -733,23 +808,12 @@ async function renderResultados(panel){
       </table>
       </div>
     </div>
-
-    <div class="tarjeta">
-      <details>
-        <summary style="cursor:pointer;font-weight:600">Bitácora de auditoría (${bitacora.length})</summary>
-        <p class="tenue" style="font-size:12.5px;margin-top:8px">Registro de las actuaciones relevantes de este comité: votos, confirmaciones, reaperturas, apertura/cierre del periodo de votación, publicación de resultados y generación de actas.</p>
-        <table style="margin-top:6px"><thead><tr><th>Fecha y hora</th><th>Quién</th><th>Acción</th><th>Detalle</th></tr></thead><tbody>
-          ${bitacora.length ? bitacora.map(ev => `<tr>
-            <td style="white-space:nowrap">${escHtml(ev.cuando)}</td>
-            <td>${escHtml(ev.actor)}</td>
-            <td>${escHtml(etiquetaAccion(ev.accion))}</td>
-            <td class="tenue">${escHtml(detalleAccion(ev.detalle))}</td>
-          </tr>`).join('') : `<tr><td colspan="4" class="tenue">Sin actuaciones registradas todavía.</td></tr>`}
-        </tbody></table>
-      </details>
-    </div>
   `;
 }
+/* La bitácora de auditoría (GET /admin/auditoria/:comite) se sigue
+   registrando en el servidor; solo se ocultó esta vista mientras se define
+   cómo se quiere mostrar. etiquetaAccion/detalleAccion quedan listas para
+   cuando se retome. */
 function etiquetaAccion(a){
   return ({
     voto_marcar: 'Marcó un voto', voto_desmarcar: 'Quitó un voto',
@@ -759,7 +823,8 @@ function etiquetaAccion(a){
     comite_abierto: 'Se abrió el comité', comite_cerrado: 'Se cerró el comité',
     resultados_publicados: 'Se publicaron los resultados', resultados_ocultados: 'Se ocultaron los resultados',
     ventana_votacion_editada: 'Se cambió la ventana de votación',
-    desempate_creado: 'Se creó una ronda de desempate', acta_generada: 'Se generó el acta'
+    desempate_creado: 'Se creó una ronda de desempate', acta_generada: 'Se generó el acta',
+    votos_borrados: 'Se borró toda la votación'
   })[a] || a;
 }
 function detalleAccion(json){
@@ -782,6 +847,13 @@ async function crearDesempate(comite_id){
   try{
     const j = await api('POST', `/admin/comite/${comite_id}/desempate`);
     window._comiteResultados = j.id;
+    renderPestana();
+  }catch(e){ alert(e.message); }
+}
+async function borrarVotosComite(comite_id){
+  if(!confirm('¿Borrar TODOS los votos y confirmaciones de este comité? Esta acción no se puede deshacer. El comité y sus candidaturas se conservan, pero la votación vuelve a cero.')) return;
+  try{
+    await api('POST', `/admin/comite/${comite_id}/borrar-votos`);
     renderPestana();
   }catch(e){ alert(e.message); }
 }
@@ -830,7 +902,7 @@ async function renderBoletaPersona(panel){
             <input type="checkbox" ${marcado ? 'checked' : ''} ${b.confirmado ? 'disabled' : ''}>
             <div style="flex-grow:1;min-width:0">
               <div>${escHtml(cand.nombre)}</div>
-              <div class="tenue">${escHtml(cand.institucion || '')}${cand.institucion && cand.especialidad ? ' · ' : ''}${escHtml(cand.especialidad || '')}</div>
+              <div class="tenue">${detalleCandidatura(cand)}</div>
             </div>
             <div style="flex-shrink:0" onclick="event.stopPropagation()">${enlaceCv(cand)}</div>
           </div>`;

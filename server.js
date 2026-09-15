@@ -1,8 +1,9 @@
 /* Servidor de Elecciones por comités (Express + SQLite), mismo método que
    comisiones-web: se despliega con PM2 detrás de nginx.
 
-   Caso de uso concreto: integración del Comité Técnico Asesor del Conteo
-   Rápido (COTECORA) — un grupo configurable de personas (típicamente las
+   Caso de uso concreto: integración del Comité Técnico Asesor del Programa
+   de Resultados Electorales Preliminares (COTAPREP) — un grupo configurable
+   de personas (típicamente las
    consejerías electorales) vota por un número fijo de candidaturas igual a
    los integrantes a elegir (comite.escanos), sin repetir candidatura. El
    voto se puede corregir hasta que la persona CONFIRMA su boleta; a partir
@@ -186,13 +187,19 @@ function calcularResultado(comite_id){
     .map(c => Object.assign({}, c, { votos: conMap[c.id] || 0 }))
     .sort((a, b) => b.votos - a.votos);
   const escanos = comite.escanos;
+  /* Una candidatura con 0 votos nunca debe contar como electa ni como
+     empatada: un empate implica contención real por un lugar, y 0 votos es
+     ausencia total de apoyo, no una disputa. Sin este filtro, si todavía
+     no vota la mayoría de las consejerías, el corte podía caer en 0 y
+     marcar como "empatadas" a todas las candidaturas sin un solo voto. */
+  const conVotos = ordenados.filter(c => c.votos > 0);
   let electos = [], empatados = [], plazasRestantes = 0;
-  if(ordenados.length <= escanos){
-    electos = ordenados.slice();
+  if(conVotos.length <= escanos){
+    electos = conVotos.slice();
   }else{
-    const corte = ordenados[escanos - 1].votos;
-    const porEncima = ordenados.filter(c => c.votos > corte);
-    const enCorte    = ordenados.filter(c => c.votos === corte);
+    const corte = conVotos[escanos - 1].votos;
+    const porEncima = conVotos.filter(c => c.votos > corte);
+    const enCorte    = conVotos.filter(c => c.votos === corte);
     plazasRestantes = escanos - porEncima.length;
     if(enCorte.length <= plazasRestantes){
       electos = porEncima.concat(enCorte);
@@ -220,6 +227,25 @@ function calcularActaCompleta(comite_id){
   }
   return { base, desempate, electosFinal };
 }
+/* "Empate" solo aparece para quienes de verdad compiten por un lugar
+   restante (así se calcula empatados); cualquier otra candidatura que no
+   quedó electa debe decir explícitamente "No electo", no quedar en blanco. */
+function estadoCandidatura(c, resultado){
+  return resultado.electos.some(x => x.id === c.id) ? 'Candidatura electa'
+    : (resultado.empatados.some(x => x.id === c.id) ? 'Empate' : 'Candidatura no electa');
+}
+
+/* Regla de paridad tal como la definió el usuario: es paritaria si los
+   hombres no superan a las mujeres por más de 1 (incluye mayoría de mujeres
+   o integración total de mujeres); cualquier otra combinación (2 hombres
+   más que mujeres, o más) es no paritaria. Las candidaturas electas sin
+   "genero" capturado no cuentan en ningún lado, así que se reportan aparte. */
+function calcularParidad(electos){
+  const mujeres = electos.filter(c => c.genero === 'Mujer').length;
+  const hombres = electos.filter(c => c.genero === 'Hombre').length;
+  const sinCapturar = electos.length - mujeres - hombres;
+  return { mujeres, hombres, sinCapturar, esParitaria: (hombres - mujeres) <= 1 };
+}
 
 /* ---- PDF del acta: paleta oficial INE 2026 y una tabla dibujada a mano
    (pdfkit no trae tablas). LOGO_PNG es una rasterización del SVG oficial
@@ -242,13 +268,13 @@ function dibujarEncabezadoPdf(doc, titulo){
 
 /* Tabla simple con encabezado en lila y filas alternadas; la altura de cada
    renglón se mide según su contenido (para que un texto largo que hace
-   wrap, como el nombre de una institución, no se encime con el siguiente
+   wrap, como un grado académico largo, no se encime con el siguiente
    renglón) y salta de página sola, repitiendo el encabezado, si no alcanza
    el espacio. */
 function dibujarTabla(doc, columnas, widths, filas){
   const startX = doc.page.margins.left;
   const anchoTotal = widths.reduce((a, b) => a + b, 0);
-  const padX = 6, padY = 6;
+  const padX = 6, padY = 4;
   const pageBottom = doc.page.height - doc.page.margins.bottom;
 
   function altoDe(valores, negritas){
@@ -293,7 +319,7 @@ app.get('/api/comites', (req, res) => {
     id: c.id, nombre: c.nombre, escanos: c.escanos, grupo_elector_id: c.grupo_elector_id,
     abierto: !!comiteAbierto(c), abre: c.abre, cierra: c.cierra,
     publicado: !!c.publicado, comite_padre_id: c.comite_padre_id,
-    revelar_al_completar: !!c.revelar_al_completar
+    revelar_al_completar: !!c.revelar_al_completar, calcular_paridad: !!c.calcular_paridad
   })));
 });
 
@@ -350,7 +376,7 @@ app.get('/api/estado', (req, res) => {
     abierto: comiteAbierto(c),
     confirmado: db.yaConfirmo(id, c.id),
     candidatos: db.listarCandidatos(c.id).map(cand => ({
-      id: cand.id, nombre: cand.nombre, institucion: cand.institucion, especialidad: cand.especialidad,
+      id: cand.id, nombre: cand.nombre, genero: cand.genero, grado_academico: cand.grado_academico, especialidad: cand.especialidad,
       cv_texto: cand.cv_texto, cv_url: cvUrl(cand.cv_filename)
     })),
     misVotos: db.votosDePersona(id, c.id)
@@ -437,7 +463,7 @@ app.get('/api/resultados/:comite', (req, res) => {
   res.json({
     comite: { id: comite.id, nombre: comite.nombre, escanos: comite.escanos },
     candidatos: r.ordenados.map(c => ({
-      id: c.id, nombre: c.nombre, institucion: c.institucion, especialidad: c.especialidad, votos: c.votos,
+      id: c.id, nombre: c.nombre, genero: c.genero, grado_academico: c.grado_academico, especialidad: c.especialidad, votos: c.votos,
       electo: r.electos.some(e => e.id === c.id), empatado: r.empatados.some(e => e.id === c.id)
     })),
     plazasRestantes: r.plazasRestantes
@@ -513,13 +539,13 @@ app.get('/api/admin/candidatos/:comite', (req, res) => {
   res.json(db.listarCandidatos(req.params.comite).map(c => Object.assign({}, c, { cv_url: cvUrl(c.cv_filename) })));
 });
 app.post('/api/admin/candidato', uploadCv.single('cv'), (req, res) => {
-  const { comite_id, nombre, institucion, especialidad, cv_texto } = req.body || {};
+  const { comite_id, nombre, genero, grado_academico, especialidad, cv_texto } = req.body || {};
   if(!comite_id || !nombre) return res.status(400).json({ error: 'Faltan datos.' });
   if(req.file && !esPdfValido(req.file.path)){
     fs.unlink(req.file.path, () => {});
     return res.status(400).json({ error: 'El archivo no es un PDF válido.' });
   }
-  const id = db.crearCandidato(Number(comite_id), nombre, institucion, especialidad, cv_texto,
+  const id = db.crearCandidato(Number(comite_id), nombre, genero, grado_academico, especialidad, cv_texto,
     req.file ? req.file.filename : null, req.file ? req.file.originalname : null);
   res.json({ ok: true, id });
 });
@@ -530,8 +556,8 @@ app.put('/api/admin/candidato/:id', uploadCv.single('cv'), (req, res) => {
     fs.unlink(req.file.path, () => {});
     return res.status(400).json({ error: 'El archivo no es un PDF válido.' });
   }
-  const { nombre, institucion, especialidad, cv_texto } = req.body || {};
-  db.editarCandidato(req.params.id, nombre, institucion, especialidad, cv_texto);
+  const { nombre, genero, grado_academico, especialidad, cv_texto } = req.body || {};
+  db.editarCandidato(req.params.id, nombre, genero, grado_academico, especialidad, cv_texto);
   if(req.file){
     borrarCvSiHuerfano(candidato.cv_filename);
     db.actualizarCvCandidato(req.params.id, req.file.filename, req.file.originalname);
@@ -562,7 +588,7 @@ app.get('/api/admin/matriz/:comite', (req, res) => {
     candidatos: db.listarCandidatos(comite.id).map(c => {
       const conteo = r.ordenados.find(x => x.id === c.id);
       return {
-        id: c.id, nombre: c.nombre, institucion: c.institucion, especialidad: c.especialidad,
+        id: c.id, nombre: c.nombre, genero: c.genero, grado_academico: c.grado_academico, especialidad: c.especialidad,
         cv_texto: c.cv_texto, cv_url: cvUrl(c.cv_filename), votos: conteo ? conteo.votos : 0,
         electo: r.electos.some(e => e.id === c.id), empatado: r.empatados.some(e => e.id === c.id)
       };
@@ -570,7 +596,11 @@ app.get('/api/admin/matriz/:comite', (req, res) => {
     personas: personas.map(p => ({ id: p.id, nombre: p.nombre, confirmado: confirmadas.has(p.id) })),
     marcas: db.marcasDeComite(comite.id),
     plazasRestantes: r.plazasRestantes,
-    hijos: db.comitesHijosDe(comite.id)
+    hijos: db.comitesHijosDe(comite.id),
+    /* Solo se calcula y se manda si el comité lo tiene activado — si está
+       apagado, ni siquiera se expone el dato (nada que mostrar ni de qué
+       advertir en el cliente). */
+    paridad: comite.calcular_paridad ? calcularParidad(r.electos) : null
   });
 });
 
@@ -612,7 +642,7 @@ app.get('/api/admin/boleta/:comite/:persona', (req, res) => {
     comite: { id: comite.id, nombre: comite.nombre, escanos: comite.escanos, abierto: comiteAbierto(comite) },
     confirmado: db.yaConfirmo(persona.id, comite.id),
     candidatos: db.listarCandidatos(comite.id).map(cand => ({
-      id: cand.id, nombre: cand.nombre, institucion: cand.institucion, especialidad: cand.especialidad,
+      id: cand.id, nombre: cand.nombre, genero: cand.genero, grado_academico: cand.grado_academico, especialidad: cand.especialidad,
       cv_url: cvUrl(cand.cv_filename)
     })),
     misVotos: db.votosDePersona(persona.id, comite.id)
@@ -646,10 +676,21 @@ app.post('/api/admin/comite/:id/desempate', (req, res) => {
      listo para que las personas electoras voten ahí. */
   db.editarComite(hijoId, { abierto: false });
   r.empatados.forEach(c => {
-    db.crearCandidato(hijoId, c.nombre, c.institucion, c.especialidad, c.cv_texto, c.cv_filename, c.cv_nombre_original);
+    db.crearCandidato(hijoId, c.nombre, c.genero, c.grado_academico, c.especialidad, c.cv_texto, c.cv_filename, c.cv_nombre_original);
   });
   db.registrarAuditoria('admin', 'desempate_creado', comite.id, { hijo_id: hijoId, candidaturas: r.empatados.map(c => c.nombre) });
   res.json({ ok: true, id: hijoId });
+});
+
+/* Reinicia la votación de un comité desde cero: borra todos los votos y
+   confirmaciones (no el comité ni sus candidaturas), para volver a votar
+   —p. ej. tras hacer pruebas—. El comité y sus candidaturas se conservan. */
+app.post('/api/admin/comite/:id/borrar-votos', (req, res) => {
+  const comite = db.getComite(req.params.id);
+  if(!comite) return res.status(404).json({ error: 'Comité no encontrado.' });
+  db.borrarVotosDeComite(comite.id);
+  db.registrarAuditoria('admin', 'votos_borrados', comite.id, null);
+  res.json({ ok: true });
 });
 
 function fechaGeneracion(){
@@ -678,15 +719,15 @@ app.get('/api/admin/acta/:comite/xlsx', async (req, res) => {
   function nuevaHoja(nombre, titulo, columnas, anchos){
     const ws = wb.addWorksheet(nombre);
     ws.columns = anchos.map(w => ({ width: w }));
-    if(logoId) ws.addImage(logoId, { tl: { col: 0, row: 0 }, ext: { width: 150, height: 54 } });
-    ws.mergeCells(1, 3, 2, Math.max(3, columnas.length));
+    if(logoId !== null) ws.addImage(logoId, { tl: { col: 0, row: 0 }, ext: { width: 150, height: 54 } });
+    ws.mergeCells(1, 3, 2, Math.max(6, columnas.length));
     const celdaTitulo = ws.getCell(1, 3);
     celdaTitulo.value = titulo;
     celdaTitulo.font = FONT_TITULO;
     celdaTitulo.alignment = { vertical: 'middle' };
-    ws.mergeCells(3, 3, 3, Math.max(3, columnas.length));
+    ws.mergeCells(3, 3, 3, Math.max(6, columnas.length));
     const celdaMeta = ws.getCell(3, 3);
-    celdaMeta.value = `Comité #${comite.id} · Generado: ${generado}`;
+    celdaMeta.value = `Generado: ${generado}`;
     celdaMeta.font = FONT_TENUE;
     ws.getRow(1).height = 26; ws.getRow(2).height = 26; ws.getRow(3).height = 16;
     const fila = ws.getRow(5);
@@ -696,19 +737,16 @@ app.get('/api/admin/acta/:comite/xlsx', async (req, res) => {
   }
 
   const s1 = nuevaHoja('Cómputo', `Cómputo — ${comite.nombre}`,
-    ['Votos', 'Candidatura', 'Institución', 'Especialidad', 'Estado'], [10, 32, 26, 22, 12]);
+    ['Candidatura', 'Grado académico', 'Votos', 'Estado'], [32, 20, 8, 22]);
   base.ordenados.forEach((c, i) => {
-    const fila = s1.addRow([
-      c.votos, c.nombre, c.institucion || '', c.especialidad || '',
-      base.electos.some(x => x.id === c.id) ? 'Electo' : (base.empatados.some(x => x.id === c.id) ? 'Empate' : '')
-    ]);
+    const fila = s1.addRow([c.nombre, c.grado_academico || '', c.votos, estadoCandidatura(c, base)]);
     fila.eachCell(cell => { cell.border = { top: BORDE, bottom: BORDE, left: BORDE, right: BORDE }; if(i % 2 === 1) cell.fill = FILL_ALT; });
   });
 
   const s2 = nuevaHoja('Electos', `Candidaturas electas — ${comite.nombre}`,
-    ['Candidatura', 'Institución', 'Votos'], [32, 26, 10]);
+    ['Candidatura', 'Grado académico', 'Votos'], [32, 26, 10]);
   electosFinal.forEach((c, i) => {
-    const fila = s2.addRow([c.nombre, c.institucion || '', c.votos]);
+    const fila = s2.addRow([c.nombre, c.grado_academico || '', c.votos]);
     fila.eachCell(cell => { cell.border = { top: BORDE, bottom: BORDE, left: BORDE, right: BORDE }; if(i % 2 === 1) cell.fill = FILL_ALT; });
   });
 
@@ -729,27 +767,24 @@ app.get('/api/admin/acta/:comite/pdf', (req, res) => {
   doc.pipe(res);
 
   dibujarEncabezadoPdf(doc, 'Acta de integración — ' + comite.nombre);
-  doc.fontSize(10).fillColor(INE_PDF.gris).text(`Comité #${comite.id} · Escaños a integrar: ${comite.escanos} · Generado: ${fechaGeneracion()}`);
+  doc.fontSize(10).fillColor(INE_PDF.gris).text(`Escaños a integrar: ${comite.escanos} · Generado: ${fechaGeneracion()}`);
   doc.moveDown(1);
 
   doc.fillColor(INE_PDF.lilaOsc).font('Helvetica-Bold').fontSize(12).text('Cómputo (mayor a menor)');
   doc.moveDown(0.4);
   dibujarTabla(doc,
-    ['Votos', 'Candidatura', 'Institución', 'Estado'],
-    [50, 190, 170, 90],
-    base.ordenados.map(c => [
-      c.votos, c.nombre, c.institucion || '',
-      base.electos.some(x => x.id === c.id) ? 'Electo' : (base.empatados.some(x => x.id === c.id) ? 'Empate' : '')
-    ])
+    ['Candidatura', 'Grado académico', 'Votos', 'Estado'],
+    [180, 130, 40, 150],
+    base.ordenados.map(c => [c.nombre, c.grado_academico || '', c.votos, estadoCandidatura(c, base)])
   );
 
   if(desempate){
     doc.fillColor(INE_PDF.lilaOsc).font('Helvetica-Bold').fontSize(12).text('Ronda de desempate — ' + desempate.comite.nombre);
     doc.moveDown(0.4);
     dibujarTabla(doc,
-      ['Votos', 'Candidatura', 'Estado'],
-      [50, 300, 150],
-      desempate.resultado.ordenados.map(c => [c.votos, c.nombre, desempate.resultado.electos.some(x => x.id === c.id) ? 'Electo' : ''])
+      ['Candidatura', 'Votos', 'Estado'],
+      [300, 50, 150],
+      desempate.resultado.ordenados.map(c => [c.nombre, c.votos, estadoCandidatura(c, desempate.resultado)])
     );
   }
 
