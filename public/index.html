@@ -340,12 +340,21 @@ function enlaceCv(c){
 }
 async function abrirCv(ev, url){
   ev.preventDefault();
+  /* Se abre la pestaña en blanco AQUÍ, de forma síncrona dentro del propio
+     clic — si se abriera después del fetch (asíncrono), el navegador ya no
+     lo asocia con una acción directa de la persona usuaria y bloquea la
+     ventana como si fuera un pop-up no solicitado. */
+  const nuevaVentana = window.open('', '_blank');
   try{
     const r = await fetch(url, { headers: Object.assign({}, miToken ? { 'X-Token': miToken } : {}, adminPass ? { 'X-Admin': adminPass } : {}) });
     if(!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'No fue posible abrir el CV.');
     const blob = await r.blob();
-    location.href = URL.createObjectURL(blob);
-  }catch(e){ alert(e.message); }
+    if(nuevaVentana) nuevaVentana.location.href = URL.createObjectURL(blob);
+    else location.href = URL.createObjectURL(blob); // por si el navegador bloqueó la ventana en blanco
+  }catch(e){
+    if(nuevaVentana) nuevaVentana.close();
+    alert(e.message);
+  }
   return false;
 }
 
