@@ -3,3 +3,4 @@ node_modules
 elecciones.sqlite
 elecciones.sqlite-shm
 elecciones.sqlite-wal
+uploads/

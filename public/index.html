@@ -3,25 +3,31 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Elecciones por comités</title>
+<title>Sistema de Elección de Comités</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
 :root{
-  --tinta:#17171a;
-  --acento:#5b3df6;
-  --encabezado:#3d4350;
-  --encabezado-alto:#4e5566;
+  /* Paleta oficial del Manual de Identidad Institucional INE 2026. */
+  --azul:#383b7e;
+  --ine:#674092;             /* Lila institucional: color dominante */
+  --ine-tinte:#d1bdef;       /* Lila claro, para acentos puntuales (p. ej. contorno) */
+  --ine-tinte-suave:#f3eefb; /* Lila claro aclarado, para fondos de selección/paneles sin saturar */
+  --acento:#49276f;          /* Lila oscuro: acento y textos secundarios */
+  --tinta:#000000;
+  --tenue:#6b6f7a;           /* gris de apoyo para texto secundario (el Gris institucional #a6a8aa no da suficiente contraste como texto) */
+  --linea:#efe9f6;
+  --linea-fuerte:#d9cdec;
   --papel:#ffffff;
-  --fondo:#f3f4f6;
-  --linea:#e4e5ea;
-  --linea-fuerte:#c9cbd3;
-  --tenue:#6b6f7a;
+  --fondo:#fbfaf9;
+  --encabezado:#674092;
+  --encabezado-alto:#7a4fa8;
   --ok:#1a7f4b;      --ok-bg:#e9f5ee;
   --falta:#a2680a;   --falta-bg:#fdf1da;
   --excede:#b3261e;  --excede-bg:#fdeae8;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{font-family:system-ui,"Segoe UI",Roboto,sans-serif;background:var(--fondo);color:var(--tinta);font-size:14px}
+body{font-family:Arial,"Segoe UI",Helvetica,sans-serif;background:var(--fondo);color:var(--tinta);font-size:17px}
 h1,h2,h3{margin:0}
 button{font:inherit;cursor:pointer}
 input,select{font:inherit}
@@ -30,54 +36,113 @@ input,select{font:inherit}
   background:var(--encabezado);color:#fff;padding:14px 20px;
   display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
 }
-.encabezado h1{font-size:16px;font-weight:600}
-.encabezado p{margin:2px 0 0;font-size:12px;color:#c9ccd4}
+.encabezado[hidden]{display:none}
+.identidad{display:flex;align-items:center;gap:14px;min-width:0}
+.marca-ine{line-height:0;flex-shrink:0}
+.marca-ine img{height:38px;width:auto;display:block}
+.titulos{min-width:0}
+.encabezado h1{font-size:20px;font-weight:600;margin:0;letter-spacing:.2px}
+.encabezado p{margin:2px 0 0;font-size:14.5px;color:#e6dcf1}
 .encabezado .herramientas{display:flex;gap:6px;flex-wrap:wrap}
 .encabezado button{
-  font-size:12.5px;padding:7px 12px;border-radius:6px;
+  font-size:14.5px;padding:8px 14px;border-radius:6px;
   border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.14);color:#fff;
 }
 .encabezado button:hover{background:var(--encabezado-alto)}
-
-.envoltura{max-width:900px;margin:0 auto;padding:22px 20px 60px}
-.tarjeta{background:var(--papel);border:1px solid var(--linea);border-radius:10px;padding:18px 20px;margin-bottom:16px}
-.tarjeta h2{font-size:15px;margin-bottom:12px}
-.tarjeta h3{font-size:13.5px;margin-bottom:8px}
-.fila{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-.fila label{font-size:12.5px;color:var(--tenue)}
-input[type=text],input[type=password],input[type=datetime-local],select{
-  padding:8px 10px;border:1px solid var(--linea-fuerte);border-radius:6px;background:#fff;min-width:160px;
+@media (max-width:520px){
+  .marca-ine img{height:28px}
 }
-.btn{background:var(--tinta);color:#fff;border:none;padding:9px 16px;border-radius:6px}
+
+.envoltura{max-width:900px;margin:0 auto;padding:22px 20px 60px;transition:max-width .15s}
+.envoltura.ancho{max-width:1560px}
+.envoltura.acceso{padding-top:9vh}
+.tarjeta{
+  background:var(--papel);border:1px solid var(--linea);border-radius:12px;padding:18px 20px;margin-bottom:16px;
+  box-shadow:0 1px 2px rgba(74,44,109,.06);
+}
+.tarjeta h2{font-size:19px;margin-bottom:12px}
+.tarjeta h3{font-size:16.5px;margin-bottom:8px}
+
+.tarjeta-acceso{
+  max-width:430px;margin:20px auto;padding:36px 32px 28px;border-radius:20px;
+  border-top:4px solid var(--ine);
+  box-shadow:0 12px 34px rgba(73,44,109,.12);
+}
+.tarjeta-acceso .logo-grande{display:block;margin:0 auto 14px;height:62px}
+.tarjeta-acceso .eyebrow-sub{text-align:center;font-size:13.5px;color:var(--ine);font-weight:600;margin-bottom:26px}
+.tarjeta-acceso h2{font-size:19px;text-align:left;margin-bottom:5px}
+.tarjeta-acceso>p.tenue{text-align:left;margin-bottom:20px}
+.campo-icono{position:relative;margin-bottom:14px}
+.campo-icono label{display:block;font-size:13px;font-weight:700;color:var(--tenue);margin-bottom:5px}
+.campo-icono .icono{position:absolute;left:13px;top:39px;color:var(--tenue);pointer-events:none;line-height:0}
+.tarjeta-acceso .campo-icono select,.tarjeta-acceso .campo-icono input{
+  width:100%;min-width:0;padding:12px 14px 12px 40px;border-radius:10px;font-size:15.5px;
+  background:var(--ine-tinte-suave);border:1px solid var(--linea-fuerte);margin-bottom:0;
+}
+.tarjeta-acceso .btn{
+  width:100%;padding:13px;border-radius:10px;font-size:15.5px;font-weight:600;margin-top:6px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.pie-acceso{text-align:center;color:var(--tenue);font-size:12.5px;margin-top:16px}
+.divisor-punto{display:flex;align-items:center;gap:10px;margin:24px 0 18px}
+.divisor-punto .linea{flex:1;height:1px;background:var(--linea-fuerte)}
+.divisor-punto .punto{width:6px;height:6px;border-radius:50%;background:var(--linea-fuerte);flex-shrink:0}
+
+.fila{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.fila label{font-size:14.5px;color:var(--tenue)}
+.campo{display:flex;flex-direction:column;gap:5px}
+.campo>label{font-size:14px;font-weight:600;color:var(--tenue)}
+.campo input,.campo textarea{width:100%}
+input[type=text],input[type=password],input[type=datetime-local],select{
+  padding:8px 10px;border:1px solid var(--linea-fuerte);border-radius:8px;background:#fff;min-width:160px;
+}
+.btn{background:var(--ine);color:#fff;border:none;padding:9px 16px;border-radius:8px}
 .btn:hover{opacity:.88}
 .btn:disabled{opacity:.4;cursor:not-allowed}
-.btn.secundario{background:#fff;color:var(--tinta);border:1px solid var(--linea-fuerte)}
+.btn.secundario{background:#fff;color:var(--ine);border:1px solid var(--linea-fuerte)}
 .btn.peligro{background:var(--excede)}
-.btn.chico{padding:5px 10px;font-size:12.5px}
+.btn.chico{padding:6px 11px;font-size:14.5px;border-radius:6px}
 
-.etiqueta{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600}
+.etiqueta{display:inline-block;padding:3px 10px;border-radius:20px;font-size:13.5px;font-weight:600}
 .etiqueta.ok{background:var(--ok-bg);color:var(--ok)}
 .etiqueta.falta{background:var(--falta-bg);color:var(--falta)}
 .etiqueta.excede{background:var(--excede-bg);color:var(--excede)}
 
-.error{color:var(--excede);font-size:12.5px;margin-top:6px}
-.tenue{color:var(--tenue);font-size:12.5px}
+.error{color:var(--excede);font-size:14.5px;margin-top:6px}
+.tenue{color:var(--tenue);font-size:14.5px}
 
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--linea)}
-th{color:var(--tenue);font-weight:600;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:15.5px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--linea)}
+th{color:var(--tenue);font-weight:600;font-size:14px}
+tfoot td{border-bottom:none;border-top:2px solid var(--linea-fuerte);background:var(--fondo)}
+.matriz-computo th,.matriz-computo td{border-right:1px solid var(--linea)}
+.matriz-computo th:first-child,.matriz-computo td:first-child{border-right:2px solid var(--linea-fuerte)}
+.matriz-computo-scroll{max-height:65vh;overflow:auto;border:1px solid var(--linea);border-radius:8px}
+.lista-candidatos-scroll{max-height:50vh;overflow-y:auto;border:1px solid var(--linea);border-radius:8px;padding:2px 4px;margin:10px 0}
+.matriz-computo thead th{position:sticky;top:0;background:var(--papel);z-index:2}
+.matriz-computo tfoot td{position:sticky;bottom:0;z-index:2}
 
 .candidato{
-  display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--linea);
+  display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid var(--linea);
   border-radius:8px;margin-bottom:8px;cursor:pointer;
 }
-.candidato:hover{border-color:var(--acento)}
-.candidato.elegido{border-color:var(--acento);background:#f4f2fe}
+.candidato input[type=checkbox]{margin-top:3px}
+.resumen-voto{
+  margin:14px 0;padding:12px 14px;background:var(--ine-tinte-suave);border:1px solid var(--linea-fuerte);
+  border-radius:8px;font-size:14.5px;
+}
+.resumen-voto ul{margin:6px 0 0;padding-left:20px}
+.resumen-voto li{margin-bottom:2px}
+.candidato:hover{border-color:var(--ine)}
+.candidato.elegido{border-color:var(--ine);background:var(--ine-tinte-suave)}
 .candidato input{margin:0}
 
 .pestanas{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
-.pestanas button{padding:8px 14px;border-radius:6px;border:1px solid var(--linea-fuerte);background:#fff}
-.pestanas button.activa{background:var(--tinta);color:#fff;border-color:var(--tinta)}
+.pestanas button{padding:8px 14px;border-radius:8px;border:1px solid var(--linea-fuerte);background:#fff}
+.pestanas button.activa{background:var(--ine);color:#fff;border-color:var(--ine)}
+
+dialog#dlgReglas{border:none;border-radius:12px;padding:0;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+dialog#dlgReglas::backdrop{background:rgba(23,23,26,.5)}
 
 [hidden]{display:none!important}
 </style>
@@ -85,17 +150,41 @@ th{color:var(--tenue);font-weight:600;font-size:12px}
 <body>
 
 <div class="encabezado">
-  <div>
-    <h1 id="tituloApp">Elecciones por comités</h1>
-    <p id="subtitulo">Acceso</p>
+  <div class="identidad">
+    <div class="marca-ine">
+      <img src="logo-ine-blanco.svg" alt="Instituto Nacional Electoral">
+    </div>
+    <div class="titulos">
+      <h1 id="tituloApp">Sistema de Elección de Comités</h1>
+      <p id="subtitulo">Acceso</p>
+    </div>
   </div>
   <div class="herramientas" id="herramientas"></div>
 </div>
 
 <div class="envoltura" id="envoltura"></div>
 
+<dialog id="dlgReglas">
+  <div style="padding:22px 26px;max-width:560px">
+    <h2 style="margin-bottom:14px">Reglas de la votación</h2>
+    <ul style="padding-left:20px;line-height:1.6;font-size:15px">
+      <li>Marcas hasta el número de escaños del comité, una candidatura por cada uno, sin repetir.</li>
+      <li>Puedes cambiar tu selección (marcar y desmarcar) las veces que quieras antes de confirmar.</li>
+      <li>Al confirmar, tu votación queda bloqueada. Si decides cambiar de opinión, usa el botón <b>"Modificar mi votación"</b> para volver a abrirla y corregirla; tendrás que confirmarla otra vez.</li>
+      <li>Los resultados se mantienen ocultos hasta que la administración los publique.</li>
+      <li>Si hay un empate en el último lugar disponible, se abre una ronda de desempate solo entre las candidaturas empatadas.</li>
+      <li>Cada candidatura debe tener un CV en PDF — usa el botón "Ver CV" para consultarlo.</li>
+    </ul>
+    <button class="btn" onclick="document.getElementById('dlgReglas').close()">Entendido</button>
+  </div>
+</dialog>
+
 <script>
-const API = '/api';
+/* Ruta relativa (sin "/" inicial) a propósito: así funciona igual si la app
+   vive en la raíz del dominio (desarrollo local) o montada bajo una
+   subruta en producción (p. ej. comisiones.sicodeaj.org/comites/), sin
+   necesidad de conocer ese prefijo de antemano. */
+const API = 'api';
 let miToken = '', miPersonaId = null, adminPass = '';
 const LLAVE_SESION = 'elecciones-sesion';
 
@@ -114,57 +203,75 @@ async function api(metodo, ruta, cuerpo){
   if(!r.ok) throw new Error(j.error || ('Error ' + r.status));
   return j;
 }
+/* Para subir el CV: sin 'Content-Type' a mano, el navegador arma el
+   multipart/form-data con el boundary correcto solo si lo deja poner a él. */
+async function apiForm(metodo, ruta, formData){
+  const r = await fetch(API + ruta, {
+    method: metodo,
+    headers: Object.assign({}, adminPass ? { 'X-Admin': adminPass } : {}),
+    body: formData
+  });
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok) throw new Error(j.error || ('Error ' + r.status));
+  return j;
+}
 
-function salir(){
+async function salir(){
+  if(miToken){ try{ await api('POST', '/persona/salir'); }catch(e){} }
   miToken = ''; miPersonaId = null; adminPass = '';
   borrarSesion();
   pintarAcceso();
 }
+function verReglas(){ document.getElementById('dlgReglas').showModal(); }
 function encabezado(titulo, subtitulo, botonSalir){
+  document.querySelector('.encabezado').hidden = false;
   document.getElementById('tituloApp').textContent = titulo;
   document.getElementById('subtitulo').textContent = subtitulo;
   document.getElementById('herramientas').innerHTML = botonSalir ? '<button onclick="salir()">Salir</button>' : '';
 }
 
 /* ================= ACCESO ================= */
+const ICONO_PERSONA = '<svg class="icono" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"></path></svg>';
+const ICONO_CANDADO = '<svg class="icono" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>';
+const ICONO_ENTRAR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>';
+
 async function pintarAcceso(){
-  encabezado('Elecciones por comités', 'Acceso', false);
-  const [grupos, personas] = await Promise.all([api('GET','/grupos'), api('GET','/personas')]);
+  document.querySelector('.encabezado').hidden = true;
+  const personas = await api('GET', '/personas');
   const env = document.getElementById('envoltura');
+  env.classList.remove('ancho');
+  env.classList.add('acceso');
   env.innerHTML = `
-    <div class="tarjeta">
-      <h2>Entrar</h2>
-      <div class="fila">
-        <label>Grupo</label>
-        <select id="selGrupo"><option value="">Todos</option>
-          ${grupos.map(g => `<option value="${g.id}">${escHtml(g.nombre)}</option>`).join('')}
+    <div class="tarjeta tarjeta-acceso">
+      <img src="logo-ine.svg" alt="INE" class="logo-grande">
+      <p class="eyebrow-sub">Sistema de Elección de Comités</p>
+
+      <h2>Iniciar sesión</h2>
+      <p class="tenue">Elige tu nombre para entrar. La primera vez estableces tu contraseña.</p>
+      <div class="campo-icono">
+        <label for="selPersona">Tu nombre</label>
+        ${ICONO_PERSONA}
+        <select id="selPersona"><option value="">— elige tu nombre —</option>
+          ${personas.map(p => `<option value="${p.id}">${escHtml(p.nombre)}</option>`).join('')}
         </select>
-      </div>
-      <div class="fila">
-        <label>Persona</label>
-        <select id="selPersona"><option value="">Selecciona tu nombre…</option></select>
       </div>
       <div id="zonaClave"></div>
       <div id="errAcceso" class="error" hidden></div>
-    </div>
-    <div class="tarjeta">
-      <h3>Administración</h3>
-      <div class="fila">
-        <input type="password" id="claveAdmin" placeholder="Clave de administrador">
-        <button class="btn secundario" onclick="entrarAdmin()">Entrar como admin</button>
-      </div>
+
+      <div class="divisor-punto"><div class="linea"></div><div class="punto"></div><div class="linea"></div></div>
+
+      <form onsubmit="event.preventDefault(); entrarAdmin()">
+        <div class="campo-icono">
+          <label for="claveAdmin">Clave de administración</label>
+          ${ICONO_CANDADO}
+          <input type="password" id="claveAdmin" placeholder="Clave de administración">
+        </div>
+        <button type="submit" class="btn secundario">${ICONO_ENTRAR} Entrar como administración</button>
+      </form>
       <div id="errAdmin" class="error" hidden></div>
     </div>
+    <p class="pie-acceso">© ${new Date().getFullYear()} Instituto Nacional Electoral — Uso interno</p>
   `;
-  function refrescarPersonas(){
-    const gid = document.getElementById('selGrupo').value;
-    const sel = document.getElementById('selPersona');
-    const lista = personas.filter(p => !gid || String(p.grupo_id) === gid);
-    sel.innerHTML = '<option value="">Selecciona tu nombre…</option>' +
-      lista.map(p => `<option value="${p.id}">${escHtml(p.nombre)}</option>`).join('');
-  }
-  document.getElementById('selGrupo').addEventListener('change', refrescarPersonas);
-  refrescarPersonas();
   document.getElementById('selPersona').addEventListener('change', async e => {
     const id = e.target.value;
     const zona = document.getElementById('zonaClave');
@@ -172,14 +279,48 @@ async function pintarAcceso(){
     if(!id){ zona.innerHTML = ''; return; }
     const { tienePassword } = await api('POST', '/persona/estado', { persona_id: Number(id) });
     zona.innerHTML = tienePassword
-      ? `<div class="fila"><input type="password" id="clave1" placeholder="Contraseña"></div>
-         <button class="btn" onclick="entrarPersona(${id})">Entrar</button>`
-      : `<p class="tenue">Primer acceso: crea tu contraseña (mínimo 8 caracteres).</p>
-         <div class="fila"><input type="password" id="clave1" placeholder="Nueva contraseña"></div>
-         <button class="btn" onclick="registrarPersona(${id})">Crear y entrar</button>`;
+      ? `<form onsubmit="event.preventDefault(); entrarPersona(${id})">
+           <div class="campo-icono">
+             <label for="clave1">Contraseña</label>
+             ${ICONO_CANDADO}
+             <input type="password" id="clave1" placeholder="Contraseña">
+           </div>
+           <button type="submit" class="btn">${ICONO_ENTRAR} Entrar</button>
+         </form>`
+      : `<p class="tenue" style="text-align:left">Primer acceso: crea tu contraseña (mínimo 8 caracteres).</p>
+         <form onsubmit="event.preventDefault(); registrarPersona(${id})">
+           <div class="campo-icono">
+             <label for="clave1">Nueva contraseña</label>
+             ${ICONO_CANDADO}
+             <input type="password" id="clave1" placeholder="Nueva contraseña">
+           </div>
+           <button type="submit" class="btn">${ICONO_ENTRAR} Crear y entrar</button>
+         </form>`;
   });
 }
 function escHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+/* El CV es siempre un PDF; es un link directo al archivo, sin vista previa
+   ni descripción corta de por medio. El archivo está protegido en el
+   servidor (solo personas autenticadas o el admin pueden descargarlo), así
+   que en vez de una navegación <a href> normal —que no puede llevar la
+   cabecera de autenticación— se pide por fetch con las mismas credenciales
+   de la sesión y se navega a un blob local; el resultado para quien usa el
+   sistema es idéntico: un link que abre el PDF en la misma pestaña. */
+function enlaceCv(c){
+  return c.cv_url
+    ? `<a href="${c.cv_url}" class="btn secundario chico" onclick="return abrirCv(event,'${c.cv_url}')">Ver CV</a>`
+    : '<span class="tenue">Sin CV</span>';
+}
+async function abrirCv(ev, url){
+  ev.preventDefault();
+  try{
+    const r = await fetch(url, { headers: Object.assign({}, miToken ? { 'X-Token': miToken } : {}, adminPass ? { 'X-Admin': adminPass } : {}) });
+    if(!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'No fue posible abrir el CV.');
+    const blob = await r.blob();
+    location.href = URL.createObjectURL(blob);
+  }catch(e){ alert(e.message); }
+  return false;
+}
 
 async function entrarPersona(id){
   const err = document.getElementById('errAcceso'); err.hidden = true;
@@ -215,44 +356,107 @@ async function pintarElector(){
   let estado;
   try{ estado = await api('GET', '/estado'); }
   catch(e){ salir(); return; }
-  encabezado('Elecciones por comités', 'Hola, ' + estado.persona.nombre, true);
+  encabezado('Sistema de Elección de Comités', 'Hola, ' + estado.persona.nombre, true);
+  document.getElementById('herramientas').innerHTML = '<button onclick="verReglas()">Reglas</button><button onclick="salir()">Salir</button>';
   const env = document.getElementById('envoltura');
+  env.classList.add('ancho');
+  env.classList.remove('acceso');
   if(!estado.comites.length){
     env.innerHTML = `<div class="tarjeta"><p class="tenue">Tu grupo no tiene ningún comité de votación asignado por ahora.</p></div>`;
     return;
   }
-  env.innerHTML = estado.comites.map(c => `
+  env.innerHTML = estado.comites.map(c => {
+    const usados = c.misVotos.length;
+    const bloqueado = c.confirmado || !c.abierto;
+    return `
     <div class="tarjeta" id="comite-${c.id}">
-      <h2>${escHtml(c.nombre)} <span class="etiqueta ${c.abierto ? 'ok' : 'falta'}">${c.abierto ? 'Abierto' : 'Cerrado'}</span></h2>
-      <p class="tenue">Esta comisión tiene ${c.escanos} escaño(s). Marca un candidato.</p>
-      <div id="lista-${c.id}">
-        ${c.candidatos.length ? c.candidatos.map(cand => `
-          <div class="candidato ${c.miVoto === cand.id ? 'elegido' : ''}" onclick="marcar(${c.id},${cand.id})">
-            <input type="radio" name="c${c.id}" ${c.miVoto === cand.id ? 'checked' : ''} ${!c.abierto ? 'disabled' : ''}>
-            <span>${escHtml(cand.nombre)}</span>
-          </div>
-        `).join('') : '<p class="tenue">Aún no hay candidatos dados de alta.</p>'}
+      <h2>${escHtml(c.nombre)}
+        <span class="etiqueta ${c.abierto ? 'ok' : 'falta'}">${c.abierto ? 'Abierto' : 'Cerrado'}</span>
+        ${c.confirmado ? '<span class="etiqueta ok">Confirmado</span>' : ''}
+      </h2>
+      <p class="tenue">
+        Marca hasta ${c.escanos} candidatura(s), una por consejería y sin repetir.
+        Llevas <b>${usados} de ${c.escanos}</b> votos.
+      </p>
+      <div id="lista-${c.id}" class="lista-candidatos-scroll">
+        ${c.candidatos.length ? c.candidatos.map(cand => {
+          const marcado = c.misVotos.includes(cand.id);
+          const sinCupo = !marcado && usados >= c.escanos;
+          return `
+          <div class="candidato ${marcado ? 'elegido' : ''}" ${bloqueado || sinCupo ? '' : `onclick="marcar(${c.id},${cand.id},${!marcado})"`}
+               style="${bloqueado || sinCupo ? 'cursor:not-allowed;opacity:' + (marcado ? '1' : '.55') : ''}">
+            <input type="checkbox" ${marcado ? 'checked' : ''} ${bloqueado || sinCupo ? 'disabled' : ''}>
+            <div style="flex-grow:1;min-width:0">
+              <div>${escHtml(cand.nombre)}</div>
+              <div class="tenue">${escHtml(cand.institucion || '')}${cand.institucion && cand.especialidad ? ' · ' : ''}${escHtml(cand.especialidad || '')}</div>
+            </div>
+            <div style="flex-shrink:0" onclick="event.stopPropagation()">${enlaceCv(cand)}</div>
+          </div>`;
+        }).join('') : '<p class="tenue">Aún no hay candidaturas dadas de alta.</p>'}
       </div>
-      ${c.miVoto ? '<p class="etiqueta ok">Tu voto quedó registrado</p>' : ''}
+      ${(() => {
+        const seleccion = c.candidatos.filter(cand => c.misVotos.includes(cand.id));
+        return `
+        <div class="resumen-voto">
+          <b>Para tu claridad y certeza — tu selección actual (${usados} de ${c.escanos}):</b>
+          ${seleccion.length
+            ? `<ul>${seleccion.map(cand => `<li>${escHtml(cand.nombre)}</li>`).join('')}</ul>`
+            : '<p class="tenue" style="margin:4px 0 0">Aún no has marcado ninguna candidatura.</p>'}
+        </div>`;
+      })()}
+      ${c.confirmado
+        ? `<p class="etiqueta ok">Tu votación quedó confirmada</p>
+           ${c.abierto ? `<button class="btn secundario" onclick="reabrirVoto(${c.id})">Modificar mi votación</button>` : ''}`
+        : `<button class="btn" ${!c.abierto ? 'disabled' : ''} onclick="confirmarVoto(${c.id})">Confirmar mi votación</button>`}
       <div id="err-${c.id}" class="error" hidden></div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
-async function marcar(comite_id, candidato_id){
+async function marcar(comite_id, candidato_id, marcarBool){
   const err = document.getElementById('err-' + comite_id); err.hidden = true;
   try{
-    await api('POST', '/voto', { comite_id, candidato_id });
+    await api('POST', '/voto', { comite_id, candidato_id, marcar: marcarBool });
+    pintarElector();
+  }catch(e){ err.textContent = e.message; err.hidden = false; }
+}
+async function confirmarVoto(comite_id){
+  const err = document.getElementById('err-' + comite_id); err.hidden = true;
+  const estado = await api('GET', '/estado');
+  const comite = estado.comites.find(c => c.id === comite_id);
+  const escanos = comite.escanos, usados = comite.misVotos.length;
+  const seleccion = comite.candidatos.filter(cand => comite.misVotos.includes(cand.id)).map(cand => cand.nombre);
+  const listado = seleccion.length ? seleccion.map(n => '• ' + n).join('\n') : '(ninguna candidatura marcada)';
+  let permitir_incompleto = false;
+  if(usados < escanos){
+    if(!confirm(`Vas a confirmar tu votación con ${usados} de ${escanos} votos:\n\n${listado}\n\nQuedará incompleta y no podrás cambiarla. ¿Confirmar de todos modos?`)) return;
+    permitir_incompleto = true;
+  }else{
+    if(!confirm(`Vas a confirmar tu votación por:\n\n${listado}\n\nUna vez confirmada, no podrás cambiarla. ¿Confirmar?`)) return;
+  }
+  try{
+    await api('POST', '/voto/confirmar', { comite_id, permitir_incompleto });
+    pintarElector();
+  }catch(e){ err.textContent = e.message; err.hidden = false; }
+}
+async function reabrirVoto(comite_id){
+  const err = document.getElementById('err-' + comite_id); err.hidden = true;
+  if(!confirm('¿Seguro que quieres modificar tu votación? Se desbloqueará para que puedas cambiar tus candidaturas; vas a tener que volver a confirmarla cuando termines.')) return;
+  try{
+    await api('POST', '/voto/reabrir', { comite_id });
     pintarElector();
   }catch(e){ err.textContent = e.message; err.hidden = false; }
 }
 
 /* ================= VISTA ADMIN ================= */
-let pestanaAdmin = 'grupos';
+let pestanaAdmin = 'comites';
 async function pintarAdmin(){
-  encabezado('Elecciones por comités', 'Administración', true);
+  encabezado('Sistema de Elección de Comités', 'Administración', true);
+  document.getElementById('envoltura').classList.add('ancho');
+  document.getElementById('envoltura').classList.remove('acceso');
   document.getElementById('envoltura').innerHTML = `
     <div class="pestanas">
-      ${['grupos','personas','comites','candidatos','resultados','accesos'].map(p =>
+      ${['comites','candidatos','resultados','accesos'].map(p =>
         `<button class="${p===pestanaAdmin?'activa':''}" onclick="irPestana('${p}')">${etiquetaPestana(p)}</button>`
       ).join('')}
     </div>
@@ -261,81 +465,17 @@ async function pintarAdmin(){
   await renderPestana();
 }
 function etiquetaPestana(p){
-  return { grupos:'Grupos', personas:'Personas', comites:'Comités', candidatos:'Candidatos', resultados:'Resultados', accesos:'Accesos' }[p];
+  return { comites:'Comités', candidatos:'Candidatos', resultados:'Cómputo', accesos:'Accesos' }[p];
 }
 function irPestana(p){ pestanaAdmin = p; pintarAdmin(); }
 
 async function renderPestana(){
   const panel = document.getElementById('panelAdmin');
-  if(pestanaAdmin === 'grupos') return renderGrupos(panel);
-  if(pestanaAdmin === 'personas') return renderPersonas(panel);
+  if(window._boletaPersona) return renderBoletaPersona(panel);
   if(pestanaAdmin === 'comites') return renderComites(panel);
   if(pestanaAdmin === 'candidatos') return renderCandidatos(panel);
   if(pestanaAdmin === 'resultados') return renderResultados(panel);
   if(pestanaAdmin === 'accesos') return renderAccesos(panel);
-}
-
-async function renderGrupos(panel){
-  const grupos = await api('GET', '/grupos');
-  panel.innerHTML = `
-    <div class="tarjeta">
-      <h2>Grupos</h2>
-      <table><thead><tr><th>Nombre</th><th></th></tr></thead><tbody>
-        ${grupos.map(g => `<tr><td>${escHtml(g.nombre)}</td>
-          <td><button class="btn peligro chico" onclick="borrarGrupo(${g.id})">Eliminar</button></td></tr>`).join('')}
-      </tbody></table>
-      <div class="fila" style="margin-top:12px">
-        <input type="text" id="nuevoGrupo" placeholder="Nombre del grupo">
-        <button class="btn" onclick="crearGrupo()">Agregar</button>
-      </div>
-      <div id="errGrupos" class="error" hidden></div>
-    </div>
-  `;
-}
-async function crearGrupo(){
-  const err = document.getElementById('errGrupos'); err.hidden = true;
-  try{ await api('POST', '/admin/grupo', { nombre: document.getElementById('nuevoGrupo').value }); renderPestana(); }
-  catch(e){ err.textContent = e.message; err.hidden = false; }
-}
-async function borrarGrupo(id){
-  if(!confirm('¿Eliminar este grupo? Solo funciona si no tiene personas ni comités asociados.')) return;
-  try{ await api('DELETE', '/admin/grupo/' + id); renderPestana(); }
-  catch(e){ alert(e.message); }
-}
-
-async function renderPersonas(panel){
-  const [personas, grupos] = await Promise.all([api('GET','/personas'), api('GET','/grupos')]);
-  const nombreGrupo = gid => (grupos.find(g => g.id === gid) || {}).nombre || '—';
-  panel.innerHTML = `
-    <div class="tarjeta">
-      <h2>Personas (padrón)</h2>
-      <table><thead><tr><th>Nombre</th><th>Grupo</th><th></th></tr></thead><tbody>
-        ${personas.map(p => `<tr><td>${escHtml(p.nombre)}</td><td>${escHtml(nombreGrupo(p.grupo_id))}</td>
-          <td><button class="btn peligro chico" onclick="borrarPersona(${p.id})">Eliminar</button></td></tr>`).join('')}
-      </tbody></table>
-      <div class="fila" style="margin-top:12px">
-        <input type="text" id="nuevaPersona" placeholder="Nombre">
-        <select id="grupoPersona">${grupos.map(g => `<option value="${g.id}">${escHtml(g.nombre)}</option>`).join('')}</select>
-        <button class="btn" onclick="crearPersona()">Agregar</button>
-      </div>
-      <div id="errPersonas" class="error" hidden></div>
-    </div>
-  `;
-}
-async function crearPersona(){
-  const err = document.getElementById('errPersonas'); err.hidden = true;
-  try{
-    await api('POST', '/admin/persona', {
-      nombre: document.getElementById('nuevaPersona').value,
-      grupo_id: Number(document.getElementById('grupoPersona').value)
-    });
-    renderPestana();
-  }catch(e){ err.textContent = e.message; err.hidden = false; }
-}
-async function borrarPersona(id){
-  if(!confirm('¿Eliminar esta persona? Se borran también su contraseña y sus votos.')) return;
-  try{ await api('DELETE', '/admin/persona/' + id); renderPestana(); }
-  catch(e){ alert(e.message); }
 }
 
 async function renderComites(panel){
@@ -344,20 +484,40 @@ async function renderComites(panel){
   panel.innerHTML = `
     <div class="tarjeta">
       <h2>Comités</h2>
-      <table><thead><tr><th>Nombre</th><th>Escaños</th><th>Grupo elector</th><th>Estado</th><th>Cierra</th><th>Resultados</th><th></th></tr></thead><tbody>
-        ${comites.map(c => `<tr>
-          <td>${escHtml(c.nombre)}</td>
+      <p class="tenue">Cada consejería del grupo elector emite tantos votos como escaños tenga el comité (uno por candidatura, sin repetir).</p>
+      <p class="tenue" style="font-size:12.5px">"Abre" y "Cierra" son opcionales: si se dejan vacíos, el periodo de votación se controla solo con el botón Abrir/Cerrar.</p>
+      <table><thead><tr><th>Nombre</th><th>Escaños</th><th>Grupo elector</th><th>Estado</th><th>Abre</th><th>Cierra</th><th>Resultados</th><th>Ronda de</th><th></th></tr></thead><tbody>
+        ${comites.map(c => c.id === window._editandoComite ? `<tr>
+          <td><input type="text" id="editComNombre-${c.id}" value="${escHtml(c.nombre)}" style="min-width:160px"></td>
+          <td><input type="text" id="editComEscanos-${c.id}" value="${c.escanos}" style="min-width:60px"></td>
+          <td><select id="editComGrupo-${c.id}">${grupos.map(g => `<option value="${g.id}" ${g.id===c.grupo_elector_id?'selected':''}>${escHtml(g.nombre)}</option>`).join('')}</select></td>
+          <td colspan="4"></td>
+          <td colspan="2" style="white-space:nowrap">
+            <button class="btn chico" onclick="guardarEdicionComite(${c.id})">Guardar</button>
+            <button class="btn secundario chico" onclick="cancelarEdicionComite()">Cancelar</button>
+          </td>
+        </tr>` : `<tr>
+          <td>${escHtml(c.nombre)}${c.comite_padre_id ? ' <span class="tenue">(desempate)</span>' : ''}</td>
           <td>${c.escanos}</td>
           <td>${escHtml(nombreGrupo(c.grupo_elector_id))}</td>
           <td><span class="etiqueta ${c.abierto?'ok':'falta'}">${c.abierto?'Abierto':'Cerrado'}</span>
               <button class="btn secundario chico" onclick="toggleComite(${c.id}, ${!c.abierto})">${c.abierto?'Cerrar':'Abrir'}</button></td>
           <td>
-            <input type="datetime-local" id="cierra-${c.id}" style="min-width:170px">
+            <input type="datetime-local" id="abre-${c.id}" style="min-width:170px" value="${c.abre ? c.abre.slice(0,16) : ''}">
+            <button class="btn secundario chico" onclick="fijarApertura(${c.id})">Fijar</button>
+          </td>
+          <td>
+            <input type="datetime-local" id="cierra-${c.id}" style="min-width:170px" value="${c.cierra ? c.cierra.slice(0,16) : ''}">
             <button class="btn secundario chico" onclick="fijarCierre(${c.id})">Fijar</button>
           </td>
           <td><span class="etiqueta ${c.publicado?'ok':'falta'}">${c.publicado?'Publicados':'Ocultos'}</span>
               <button class="btn secundario chico" onclick="togglePublicado(${c.id}, ${!c.publicado})">${c.publicado?'Ocultar':'Publicar'}</button></td>
-          <td><button class="btn peligro chico" onclick="borrarComite(${c.id})">Eliminar</button></td>
+          <td><label class="tenue" style="display:flex;align-items:center;gap:5px;cursor:pointer">
+              <input type="checkbox" ${c.revelar_al_completar ? 'checked' : ''} onchange="toggleRevelar(${c.id}, this.checked)"> al completarse</label></td>
+          <td style="white-space:nowrap">
+            <button class="btn secundario chico" onclick="editarComiteUI(${c.id})">Editar</button>
+            <button class="btn peligro chico" onclick="borrarComite(${c.id})">Eliminar</button>
+          </td>
         </tr>`).join('')}
       </tbody></table>
       <div class="fila" style="margin-top:12px">
@@ -383,9 +543,15 @@ async function crearComite(){
 }
 async function toggleComite(id, abierto){ await api('PUT', '/admin/comite/' + id, { abierto }); renderPestana(); }
 async function togglePublicado(id, publicado){ await api('PUT', '/admin/comite/' + id, { publicado }); renderPestana(); }
+async function toggleRevelar(id, revelar_al_completar){ await api('PUT', '/admin/comite/' + id, { revelar_al_completar }); renderPestana(); }
 async function fijarCierre(id){
   const cierra = document.getElementById('cierra-' + id).value || null;
   await api('PUT', '/admin/comite/' + id, { cierra });
+  renderPestana();
+}
+async function fijarApertura(id){
+  const abre = document.getElementById('abre-' + id).value || null;
+  await api('PUT', '/admin/comite/' + id, { abre });
   renderPestana();
 }
 async function borrarComite(id){
@@ -393,30 +559,80 @@ async function borrarComite(id){
   try{ await api('DELETE', '/admin/comite/' + id); renderPestana(); }
   catch(e){ alert(e.message); }
 }
+function editarComiteUI(id){ window._editandoComite = id; renderPestana(); }
+function cancelarEdicionComite(){ window._editandoComite = null; renderPestana(); }
+async function guardarEdicionComite(id){
+  const err = document.getElementById('errComites'); if(err) err.hidden = true;
+  try{
+    await api('PUT', '/admin/comite/' + id, {
+      nombre: document.getElementById('editComNombre-' + id).value,
+      escanos: Number(document.getElementById('editComEscanos-' + id).value) || 1,
+      grupo_elector_id: Number(document.getElementById('editComGrupo-' + id).value)
+    });
+    window._editandoComite = null;
+    renderPestana();
+  }catch(e){ if(err){ err.textContent = e.message; err.hidden = false; } else alert(e.message); }
+}
 
 async function renderCandidatos(panel){
   const comites = await api('GET', '/comites');
   if(!comites.length){ panel.innerHTML = '<div class="tarjeta"><p class="tenue">Da de alta un comité primero.</p></div>'; return; }
   const actual = window._comiteCandidatos || comites[0].id;
   window._comiteCandidatos = actual;
-  const cands = await api('GET', `/admin/resultados/${actual}`).catch(() => ({ candidatos: [] }));
+  const cands = await api('GET', `/admin/candidatos/${actual}`).catch(() => []);
   panel.innerHTML = `
     <div class="tarjeta">
-      <h2>Candidatos</h2>
+      <h2>Candidaturas</h2>
       <div class="fila">
         <label>Comité</label>
         <select id="selComiteCand" onchange="cambiarComiteCand(this.value)">
           ${comites.map(c => `<option value="${c.id}" ${c.id===Number(actual)?'selected':''}>${escHtml(c.nombre)}</option>`).join('')}
         </select>
       </div>
-      <table><thead><tr><th>Nombre</th><th></th></tr></thead><tbody>
-        ${cands.candidatos.map(c => `<tr><td>${escHtml(c.nombre)}</td>
-          <td><button class="btn peligro chico" onclick="borrarCandidato(${c.id})">Eliminar</button></td></tr>`).join('')}
+      <table><thead><tr><th>Nombre</th><th>Institución</th><th>Especialidad</th><th>CV</th><th></th></tr></thead><tbody>
+        ${cands.map(c => c.id === window._editandoCandidato ? `<tr>
+          <td><input type="text" id="editNombre-${c.id}" value="${escHtml(c.nombre)}" style="min-width:140px"></td>
+          <td><input type="text" id="editInstitucion-${c.id}" value="${escHtml(c.institucion || '')}" style="min-width:140px"></td>
+          <td><input type="text" id="editEspecialidad-${c.id}" value="${escHtml(c.especialidad || '')}" style="min-width:140px"></td>
+          <td style="min-width:200px">
+            <input type="file" id="editCvArchivo-${c.id}" accept="application/pdf">
+            ${c.cv_url ? `<div class="tenue" style="margin-top:2px">Ya tiene PDF; sube otro para reemplazarlo.</div>` : ''}
+          </td>
+          <td style="white-space:nowrap">
+            <button class="btn chico" onclick="guardarEdicionCandidato(${c.id})">Guardar</button>
+            <button class="btn secundario chico" onclick="cancelarEdicionCandidato()">Cancelar</button>
+          </td>
+        </tr>` : `<tr>
+          <td>${escHtml(c.nombre)}</td>
+          <td>${escHtml(c.institucion || '')}</td>
+          <td>${escHtml(c.especialidad || '')}</td>
+          <td>${enlaceCv(c)}</td>
+          <td style="white-space:nowrap">
+            <button class="btn secundario chico" onclick="editarCandidatoUI(${c.id})">Editar</button>
+            <button class="btn peligro chico" onclick="borrarCandidato(${c.id})">Eliminar</button>
+          </td>
+        </tr>`).join('')}
       </tbody></table>
-      <div class="fila" style="margin-top:12px">
-        <input type="text" id="nuevoCandidato" placeholder="Nombre del candidato">
-        <button class="btn" onclick="crearCandidato(${actual})">Agregar</button>
+      <h3 style="margin-top:16px">Agregar candidatura</h3>
+      <div class="fila" style="align-items:flex-start">
+        <div class="campo" style="flex:1 1 220px">
+          <label>Nombre completo</label>
+          <input type="text" id="nuevoCandidatoNombre" placeholder="Nombre y apellidos">
+        </div>
+        <div class="campo" style="flex:1 1 220px">
+          <label>Institución de adscripción</label>
+          <input type="text" id="nuevoCandidatoInstitucion" placeholder="Ej. UNAM">
+        </div>
+        <div class="campo" style="flex:1 1 220px">
+          <label>Especialidad</label>
+          <input type="text" id="nuevoCandidatoEspecialidad" placeholder="Ej. estadística, muestreo…">
+        </div>
       </div>
+      <div class="campo" style="margin-bottom:14px;max-width:320px">
+        <label>CV (PDF)</label>
+        <input type="file" id="nuevoCandidatoCv" accept="application/pdf">
+      </div>
+      <button class="btn" onclick="crearCandidato(${actual})">Agregar candidatura</button>
       <div id="errCandidatos" class="error" hidden></div>
     </div>
   `;
@@ -425,14 +641,37 @@ function cambiarComiteCand(id){ window._comiteCandidatos = Number(id); renderPes
 async function crearCandidato(comite_id){
   const err = document.getElementById('errCandidatos'); err.hidden = true;
   try{
-    await api('POST', '/admin/candidato', { comite_id, nombre: document.getElementById('nuevoCandidato').value });
+    const fd = new FormData();
+    fd.append('comite_id', comite_id);
+    fd.append('nombre', document.getElementById('nuevoCandidatoNombre').value);
+    fd.append('institucion', document.getElementById('nuevoCandidatoInstitucion').value);
+    fd.append('especialidad', document.getElementById('nuevoCandidatoEspecialidad').value);
+    const archivo = document.getElementById('nuevoCandidatoCv').files[0];
+    if(archivo) fd.append('cv', archivo);
+    await apiForm('POST', '/admin/candidato', fd);
     renderPestana();
   }catch(e){ err.textContent = e.message; err.hidden = false; }
 }
 async function borrarCandidato(id){
-  if(!confirm('¿Eliminar este candidato? Se borran también los votos que tenga.')) return;
+  if(!confirm('¿Eliminar esta candidatura? Se borran también los votos que tenga.')) return;
   try{ await api('DELETE', '/admin/candidato/' + id); renderPestana(); }
   catch(e){ alert(e.message); }
+}
+function editarCandidatoUI(id){ window._editandoCandidato = id; renderPestana(); }
+function cancelarEdicionCandidato(){ window._editandoCandidato = null; renderPestana(); }
+async function guardarEdicionCandidato(id){
+  const err = document.getElementById('errCandidatos'); if(err) err.hidden = true;
+  try{
+    const fd = new FormData();
+    fd.append('nombre', document.getElementById('editNombre-' + id).value);
+    fd.append('institucion', document.getElementById('editInstitucion-' + id).value);
+    fd.append('especialidad', document.getElementById('editEspecialidad-' + id).value);
+    const archivo = document.getElementById('editCvArchivo-' + id).files[0];
+    if(archivo) fd.append('cv', archivo);
+    await apiForm('PUT', '/admin/candidato/' + id, fd);
+    window._editandoCandidato = null;
+    renderPestana();
+  }catch(e){ if(err){ err.textContent = e.message; err.hidden = false; } else alert(e.message); }
 }
 
 async function renderResultados(panel){
@@ -440,24 +679,174 @@ async function renderResultados(panel){
   if(!comites.length){ panel.innerHTML = '<div class="tarjeta"><p class="tenue">No hay comités todavía.</p></div>'; return; }
   const actual = window._comiteResultados || comites[0].id;
   window._comiteResultados = actual;
-  const r = await api('GET', `/admin/resultados/${actual}`);
+  const [m, bitacora] = await Promise.all([
+    api('GET', `/admin/matriz/${actual}`),
+    api('GET', `/admin/auditoria/${actual}`).catch(() => [])
+  ]);
+  const hayEmpate = m.candidatos.some(c => c.empatado);
   panel.innerHTML = `
     <div class="tarjeta">
-      <h2>Resultados (siempre visibles para el admin, sin importar si ya se publicaron)</h2>
+      <h2>Matriz de cómputo <span class="tenue" style="font-weight:400;font-size:12.5px">(siempre visible para el admin, sin importar si ya se publicó)</span></h2>
       <div class="fila">
         <label>Comité</label>
         <select id="selComiteRes" onchange="cambiarComiteRes(this.value)">
-          ${comites.map(c => `<option value="${c.id}" ${c.id===Number(actual)?'selected':''}>${escHtml(c.nombre)}</option>`).join('')}
+          ${comites.map(c => `<option value="${c.id}" ${c.id===Number(actual)?'selected':''}>${escHtml(c.nombre)}${c.comite_padre_id ? ' (desempate)' : ''}</option>`).join('')}
         </select>
+        <button class="btn secundario chico" onclick="descargarActa(${actual},'xlsx')">Descargar Excel</button>
+        <button class="btn secundario chico" onclick="descargarActa(${actual},'pdf')">Descargar PDF</button>
       </div>
-      <p class="tenue">Votos emitidos: ${r.totalVotantes}</p>
-      <table><thead><tr><th>Candidato</th><th>Votos</th></tr></thead><tbody>
-        ${r.candidatos.map(c => `<tr><td>${escHtml(c.nombre)}</td><td>${c.votos}</td></tr>`).join('')}
-      </tbody></table>
+      <p class="tenue">${m.comite.escanos} escaño(s) a integrar · ${m.personas.filter(p=>p.confirmado).length} de ${m.personas.length} consejerías confirmaron su voto.</p>
+
+      ${hayEmpate ? `
+        <div class="etiqueta falta" style="display:block;margin-bottom:10px;padding:8px 12px">
+          Hay ${m.candidatos.filter(c=>c.empatado).length} candidaturas empatadas por ${m.plazasRestantes} lugar(es) disponible(s).
+          <button class="btn chico" style="margin-left:8px" onclick="crearDesempate(${actual})">Crear ronda de desempate</button>
+        </div>` : ''}
+      ${m.hijos.length ? `<p class="tenue">Rondas de desempate: ${m.hijos.map(h => `<a href="#" onclick="event.preventDefault();cambiarComiteRes(${h.id})">${escHtml(h.nombre)}</a>`).join(' · ')}</p>` : ''}
+
+      <div class="matriz-computo-scroll">
+      <table class="matriz-computo" style="table-layout:fixed;width:max-content;min-width:100%"><thead><tr>
+        <th style="min-width:240px;max-width:280px;border-right:2px solid var(--linea-fuerte)">Candidatura</th>
+        ${m.personas.map(p => `<th title="Clic para ver su boleta · ${p.confirmado ? 'Confirmó' : 'Sin confirmar'}" style="min-width:76px;max-width:76px;font-size:10.5px;line-height:1.25;padding:6px 4px;font-weight:600;cursor:pointer" onclick="verBoletaPersona(${p.id})">${escHtml(p.nombre)}${p.confirmado ? ' ✓' : ''}</th>`).join('')}
+        <th style="min-width:60px;border-left:2px solid var(--linea-fuerte)">Total</th><th style="min-width:80px">Estado</th>
+      </tr></thead><tbody>
+        ${m.candidatos.map(c => `<tr${c.electo ? ' style="background:var(--ok-bg)"' : c.empatado ? ' style="background:var(--falta-bg)"' : ''}>
+          <td>${escHtml(c.nombre)}<div class="tenue">${escHtml(c.institucion||'')}${c.institucion&&c.especialidad?' · ':''}${escHtml(c.especialidad||'')}</div></td>
+          ${m.personas.map(p => {
+            const marcado = m.marcas.some(v=>v.persona_id===p.id&&v.candidato_id===c.id);
+            return `<td style="text-align:center;cursor:pointer" title="Clic para ${marcado?'quitar':'poner'} el voto de ${escHtml(p.nombre)} por esta candidatura" onclick="toggleVotoAdmin(${p.id},${m.comite.id},${c.id},${!marcado})">${marcado ? '✓' : ''}</td>`;
+          }).join('')}
+          <td style="text-align:center;font-weight:600;border-left:2px solid var(--linea-fuerte)">${c.votos}</td>
+          <td>${c.electo ? '<span class="etiqueta ok">Electo</span>' : c.empatado ? '<span class="etiqueta falta">Empate</span>' : ''}</td>
+        </tr>`).join('')}
+      </tbody>
+      <tfoot><tr>
+        <td style="font-weight:600">Votos emitidos por consejería</td>
+        ${m.personas.map(p => {
+          const n = m.marcas.filter(v => v.persona_id === p.id).length;
+          const color = n > m.comite.escanos ? 'var(--excede)' : n === m.comite.escanos ? 'var(--ok)' : n === 0 ? 'var(--tenue)' : 'var(--falta)';
+          return `<td style="text-align:center;font-weight:600;color:${color}">${n}/${m.comite.escanos}</td>`;
+        }).join('')}
+        <td style="text-align:center;font-weight:600;border-left:2px solid var(--linea-fuerte)">${m.marcas.length}</td>
+        <td></td>
+      </tr></tfoot>
+      </table>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <details>
+        <summary style="cursor:pointer;font-weight:600">Bitácora de auditoría (${bitacora.length})</summary>
+        <p class="tenue" style="font-size:12.5px;margin-top:8px">Registro de las actuaciones relevantes de este comité: votos, confirmaciones, reaperturas, apertura/cierre del periodo de votación, publicación de resultados y generación de actas.</p>
+        <table style="margin-top:6px"><thead><tr><th>Fecha y hora</th><th>Quién</th><th>Acción</th><th>Detalle</th></tr></thead><tbody>
+          ${bitacora.length ? bitacora.map(ev => `<tr>
+            <td style="white-space:nowrap">${escHtml(ev.cuando)}</td>
+            <td>${escHtml(ev.actor)}</td>
+            <td>${escHtml(etiquetaAccion(ev.accion))}</td>
+            <td class="tenue">${escHtml(detalleAccion(ev.detalle))}</td>
+          </tr>`).join('') : `<tr><td colspan="4" class="tenue">Sin actuaciones registradas todavía.</td></tr>`}
+        </tbody></table>
+      </details>
     </div>
   `;
 }
+function etiquetaAccion(a){
+  return ({
+    voto_marcar: 'Marcó un voto', voto_desmarcar: 'Quitó un voto',
+    voto_marcar_admin: 'Admin marcó un voto', voto_desmarcar_admin: 'Admin quitó un voto',
+    confirmar: 'Confirmó su votación', reabrir_propia: 'Reabrió su boleta',
+    reabrir_admin: 'Admin reabrió una boleta',
+    comite_abierto: 'Se abrió el comité', comite_cerrado: 'Se cerró el comité',
+    resultados_publicados: 'Se publicaron los resultados', resultados_ocultados: 'Se ocultaron los resultados',
+    ventana_votacion_editada: 'Se cambió la ventana de votación',
+    desempate_creado: 'Se creó una ronda de desempate', acta_generada: 'Se generó el acta'
+  })[a] || a;
+}
+function detalleAccion(json){
+  if(!json) return '';
+  try{
+    const d = JSON.parse(json);
+    return Object.entries(d).filter(([,v]) => v !== null && v !== undefined)
+      .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join(' · ');
+  }catch(e){ return ''; }
+}
 function cambiarComiteRes(id){ window._comiteResultados = Number(id); renderPestana(); }
+async function toggleVotoAdmin(persona_id, comite_id, candidato_id, marcar){
+  try{
+    await api('POST', '/admin/voto', { persona_id, comite_id, candidato_id, marcar });
+    renderPestana();
+  }catch(e){ alert(e.message); }
+}
+async function crearDesempate(comite_id){
+  if(!confirm('¿Crear la ronda de desempate con las candidaturas empatadas?')) return;
+  try{
+    const j = await api('POST', `/admin/comite/${comite_id}/desempate`);
+    window._comiteResultados = j.id;
+    renderPestana();
+  }catch(e){ alert(e.message); }
+}
+async function descargarActa(comite_id, formato){
+  const r = await fetch(`${API}/admin/acta/${comite_id}/${formato}`, { headers: { 'X-Admin': adminPass } });
+  if(!r.ok){ const j = await r.json().catch(() => ({})); alert(j.error || 'No se pudo generar el archivo.'); return; }
+  const blob = await r.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `acta-${comite_id}.${formato}`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* Vista de "acompañamiento": exactamente lo que ve una consejería en su
+   propia boleta, para guiarla si se le complica. Se llega dando clic a su
+   nombre en la matriz de cómputo; los cambios usan los mismos endpoints de
+   admin que la matriz, así que quedan reflejados ahí también. */
+function verBoletaPersona(persona_id){
+  window._boletaPersona = { persona_id, comite_id: window._comiteResultados };
+  renderPestana();
+}
+function volverDeBoleta(){
+  window._boletaPersona = null;
+  pestanaAdmin = 'resultados';
+  renderPestana();
+}
+async function renderBoletaPersona(panel){
+  const { persona_id, comite_id } = window._boletaPersona;
+  const b = await api('GET', `/admin/boleta/${comite_id}/${persona_id}`);
+  const usados = b.misVotos.length;
+  panel.innerHTML = `
+    <div class="tarjeta">
+      <button class="btn secundario chico" onclick="volverDeBoleta()">← Volver a la matriz</button>
+      <h2 style="margin-top:14px">Boleta de ${escHtml(b.persona.nombre)}</h2>
+      <p class="tenue">
+        ${escHtml(b.comite.nombre)} · ${b.comite.escanos} escaño(s) · lleva <b>${usados} de ${b.comite.escanos}</b> votos ·
+        ${b.confirmado ? '<span class="etiqueta ok">Confirmada</span>' : '<span class="etiqueta falta">Sin confirmar</span>'}
+      </p>
+      <div class="lista-candidatos-scroll">
+        ${b.candidatos.length ? b.candidatos.map(cand => {
+          const marcado = b.misVotos.includes(cand.id);
+          return `
+          <div class="candidato ${marcado ? 'elegido' : ''}" style="${b.confirmado ? 'cursor:not-allowed' : ''}"
+               ${b.confirmado ? '' : `onclick="toggleVotoAdmin(${persona_id},${comite_id},${cand.id},${!marcado})"`}>
+            <input type="checkbox" ${marcado ? 'checked' : ''} ${b.confirmado ? 'disabled' : ''}>
+            <div style="flex-grow:1;min-width:0">
+              <div>${escHtml(cand.nombre)}</div>
+              <div class="tenue">${escHtml(cand.institucion || '')}${cand.institucion && cand.especialidad ? ' · ' : ''}${escHtml(cand.especialidad || '')}</div>
+            </div>
+            <div style="flex-shrink:0" onclick="event.stopPropagation()">${enlaceCv(cand)}</div>
+          </div>`;
+        }).join('') : '<p class="tenue">Aún no hay candidaturas dadas de alta.</p>'}
+      </div>
+      ${b.confirmado
+        ? `<button class="btn secundario" onclick="adminReabrirBoleta(${persona_id},${comite_id})">Reabrir su confirmación</button>`
+        : '<p class="tenue">Los cambios que hagas aquí se reflejan directo en su boleta.</p>'}
+    </div>
+  `;
+}
+async function adminReabrirBoleta(persona_id, comite_id){
+  if(!confirm('¿Reabrir la confirmación de esta persona para poder editar su boleta?')) return;
+  await api('POST', '/admin/voto/reabrir', { persona_id, comite_id });
+  renderPestana();
+}
 
 async function renderAccesos(panel){
   const [personas, conClave] = await Promise.all([api('GET','/personas'), api('GET','/admin/claves')]);
