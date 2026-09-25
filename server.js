@@ -247,11 +247,11 @@ function calcularParidad(electos){
   return { mujeres, hombres, sinCapturar, esParitaria: (hombres - mujeres) <= 1 };
 }
 
-/* ---- PDF del acta: paleta oficial INE 2026 y una tabla dibujada a mano
-   (pdfkit no trae tablas). LOGO_PNG es una rasterización del SVG oficial
-   (public/logo-ine.svg) generada una sola vez con Playwright — pdfkit no
-   puede insertar SVG directo. */
-const INE_PDF = { lila: '#674092', lilaOsc: '#49276F', gris: '#6b6f7a', filaAlt: '#f5f1fa' };
+/* ---- PDF del acta: paleta oficial INE 2026 (Manual de Identidad
+   Institucional, sección 2.3) y una tabla dibujada a mano (pdfkit no trae
+   tablas). LOGO_PNG es el imagotipo oficial a color — pdfkit no puede
+   insertar SVG directo, por eso se usa el PNG. */
+const INE_PDF = { lila: '#454247', lilaOsc: '#000000', gris: '#828A91', filaAlt: '#F7F5F3' };
 const LOGO_PNG = path.join(__dirname, 'assets', 'logo-ine.png');
 
 function dibujarEncabezadoPdf(doc, titulo){
@@ -709,12 +709,12 @@ app.get('/api/admin/acta/:comite/xlsx', async (req, res) => {
 
   const wb = new ExcelJS.Workbook();
   const logoId = fs.existsSync(LOGO_PNG) ? wb.addImage({ filename: LOGO_PNG, extension: 'png' }) : null;
-  const FILL_LILA = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF674092' } };
-  const FILL_ALT  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3EEFB' } };
+  const FILL_LILA = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF454247' } };
+  const FILL_ALT  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFEBE7' } };
   const FONT_BLANCO = { bold: true, color: { argb: 'FFFFFFFF' } };
-  const FONT_TITULO = { bold: true, size: 13, color: { argb: 'FF49276F' } };
-  const FONT_TENUE  = { italic: true, size: 9, color: { argb: 'FF6B6F7A' } };
-  const BORDE = { style: 'thin', color: { argb: 'FFE2D9F1' } };
+  const FONT_TITULO = { bold: true, size: 13, color: { argb: 'FF000000' } };
+  const FONT_TENUE  = { italic: true, size: 9, color: { argb: 'FF828A91' } };
+  const BORDE = { style: 'thin', color: { argb: 'FFE3DFDA' } };
 
   function nuevaHoja(nombre, titulo, columnas, anchos){
     const ws = wb.addWorksheet(nombre);

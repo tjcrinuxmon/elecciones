@@ -4,23 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sistema de Elección de Comités</title>
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" href="favicon.png">
 <style>
 :root{
-  /* Paleta oficial del Manual de Identidad Institucional INE 2026. */
-  --azul:#383b7e;
-  --ine:#674092;             /* Lila institucional: color dominante */
-  --ine-tinte:#d1bdef;       /* Lila claro, para acentos puntuales (p. ej. contorno) */
-  --ine-tinte-suave:#f3eefb; /* Lila claro aclarado, para fondos de selección/paneles sin saturar */
-  --acento:#49276f;          /* Lila oscuro: acento y textos secundarios */
+  /* Paleta oficial del Manual de Identidad Institucional INE 2026, sección 2.3. */
+  --azul:#454247;
+  --ine:#454247;             /* Gris Oxford: color dominante */
+  --ine-tinte:#C5C9CC;       /* Gris claro, para acentos puntuales (p. ej. contorno) */
+  --ine-tinte-suave:#EFEBE7; /* Neutro derivado, para fondos de selección/paneles sin saturar */
+  --acento:#000000;          /* Negro: acento y textos secundarios */
   --tinta:#000000;
-  --tenue:#6b6f7a;           /* gris de apoyo para texto secundario (el Gris institucional #a6a8aa no da suficiente contraste como texto) */
-  --linea:#efe9f6;
-  --linea-fuerte:#d9cdec;
+  --tenue:#828A91;           /* Gris medio institucional, como texto secundario */
+  --linea:#EDEAE6;
+  --linea-fuerte:#C5C9CC;
   --papel:#ffffff;
-  --fondo:#fbfaf9;
-  --encabezado:#674092;
-  --encabezado-alto:#7a4fa8;
+  --fondo:#F7F5F3;
+  --encabezado:#454247;
+  --encabezado-alto:#828A91;
   --ok:#1a7f4b;      --ok-bg:#e9f5ee;
   --falta:#a2680a;   --falta-bg:#fdf1da;
   --excede:#b3261e;  --excede-bg:#fdeae8;
@@ -42,7 +42,7 @@ input,select{font:inherit}
 .marca-ine img{height:38px;width:auto;display:block}
 .titulos{min-width:0}
 .encabezado h1{font-size:20px;font-weight:600;margin:0;letter-spacing:.2px}
-.encabezado p{margin:2px 0 0;font-size:14.5px;color:#e6dcf1}
+.encabezado p{margin:2px 0 0;font-size:14.5px;color:#E3DFDA}
 .encabezado .herramientas{display:flex;gap:6px;flex-wrap:wrap}
 .encabezado button{
   font-size:14.5px;padding:8px 14px;border-radius:6px;
@@ -58,7 +58,7 @@ input,select{font:inherit}
 .envoltura.acceso{padding-top:9vh}
 .tarjeta{
   background:var(--papel);border:1px solid var(--linea);border-radius:12px;padding:18px 20px;margin-bottom:16px;
-  box-shadow:0 1px 2px rgba(74,44,109,.06);
+  box-shadow:0 1px 2px rgba(0,0,0,.06);
 }
 .tarjeta h2{font-size:19px;margin-bottom:12px}
 .tarjeta h3{font-size:16.5px;margin-bottom:8px}
@@ -66,7 +66,7 @@ input,select{font:inherit}
 .tarjeta-acceso{
   max-width:430px;margin:20px auto;padding:36px 32px 28px;border-radius:20px;
   border-top:4px solid var(--ine);
-  box-shadow:0 12px 34px rgba(73,44,109,.12);
+  box-shadow:0 12px 34px rgba(0,0,0,.12);
 }
 .tarjeta-acceso .logo-grande{display:block;margin:0 auto 14px;height:62px}
 .tarjeta-acceso .eyebrow-sub{text-align:center;font-size:13.5px;color:var(--ine);font-weight:600;margin-bottom:26px}
@@ -84,7 +84,7 @@ input,select{font:inherit}
   position:absolute;right:6px;top:29px;background:none;border:none;padding:6px;
   color:var(--tenue);cursor:pointer;line-height:0;border-radius:6px;
 }
-.campo-icono .alternar-clave:hover{color:var(--ine);background:rgba(103,64,146,.08)}
+.campo-icono .alternar-clave:hover{color:var(--ine);background:rgba(0,0,0,.08)}
 .tarjeta-acceso .btn{
   width:100%;padding:13px;border-radius:10px;font-size:15.5px;font-weight:600;margin-top:6px;
   display:flex;align-items:center;justify-content:center;gap:8px;
@@ -158,7 +158,7 @@ dialog#dlgReglas::backdrop{background:rgba(23,23,26,.5)}
 <div class="encabezado">
   <div class="identidad">
     <div class="marca-ine">
-      <img src="logo-ine-blanco.svg" alt="Instituto Nacional Electoral">
+      <img src="logo-ine-blanco.png" alt="Instituto Nacional Electoral">
     </div>
     <div class="titulos">
       <h1 id="tituloApp">Sistema de Elección de Comités</h1>
@@ -264,7 +264,7 @@ async function pintarAcceso(){
   env.classList.add('acceso');
   env.innerHTML = `
     <div class="tarjeta tarjeta-acceso">
-      <img src="logo-ine.svg" alt="INE" class="logo-grande">
+      <img src="logo-ine.png" alt="INE" class="logo-grande">
       <p class="eyebrow-sub">Sistema de Elección de Comités</p>
 
       <h2>Iniciar sesión</h2>
